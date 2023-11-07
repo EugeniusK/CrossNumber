@@ -41,9 +41,7 @@ def tetradic(MAX_SIZE):
     n = 0
     while n < MAX_SIZE:
         if (
-            n in prime_arr
-            and set(list(str(n))).intersection({"2", "3", "4", "5", "6", "7", "9"})
-            == set()
+            set(list(str(n))).intersection({"2", "3", "4", "5", "6", "7", "9"}) == set()
             and str(n) == str(n)[::-1]
         ):
             arr.append(n)
@@ -484,4 +482,3 @@ NUMBERS_DICT = {
 }
 if __name__ == "__main__":
     print("main")
-    print(untouchable(1000))
