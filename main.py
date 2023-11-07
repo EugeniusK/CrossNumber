@@ -172,6 +172,8 @@ class CrossNumber:
                         10 ** self.max_lengths[x]
                     )
                 json.dump(numbers_dict_calculated, f)
+        # print(self.all_children_possible_count.values())
+        # print(math.prod(self.all_children_possible_count.values()))
 
     def set_value(self, row, col, horizontal, value):
         if horizontal == True:
@@ -269,64 +271,6 @@ class CrossNumber:
                 *self.all_children_pos[x],
                 self.all_children_possible[self.all_children_pos[x]][solution[x]],
             )
-        # self.display()
-
-    # def backtrace(self):
-    #     number_tier_one = len(self.tier_one_lengths.keys())
-    #     all_children_possible = dict()
-    #     all_children_possible_count = dict()
-    #     all_children_pos = list(self.tier_one_lengths.keys())
-    #     for x in self.tier_one_lengths.keys():
-    #         all_children_possible[x] = self.get_possible(*x)
-    #         all_children_possible_count[x] = len(self.get_possible(*x))
-
-    #     def safe_up_to(solution, position):
-    #         self.clear()
-    #         for s in range(position):
-    #             self.set_value(
-    #                 *all_children_pos[s],
-    #                 all_children_possible[all_children_pos[s]][solution[s]]
-    #             )
-    #             if not all_children_possible[all_children_pos[s + 1]][
-    #                 solution[s + 1]
-    #             ] in self.get_possible(*all_children_pos[s + 1]):
-    #                 return False
-    #         self.set_value(
-    #             *all_children_pos[position],
-    #             all_children_possible[all_children_pos[position]][solution[position]]
-    #         )
-    #         return True
-
-    #     solution = [None] * number_tier_one
-
-    #     def backtrace_from(position):
-    #         while True:
-    #             if safe_up_to(solution, position):
-    #                 if position >= number_tier_one - 1:
-    #                     return solution
-    #                 position += 1
-    #                 solution[position] = 0
-    #             else:
-    #                 while (
-    #                     solution[position]
-    #                     == all_children_possible_count[all_children_pos[position]] - 1
-    #                 ):
-    #                     solution[position] = None
-    #                     position -= 1
-    #                 if position < 0:
-    #                     break
-    #                 solution[position] += 1
-    #         return None
-
-    #     solution[0] = 0
-    #     solution = backtrace_from(0)
-    #     self.clear()
-    #     for x in range(len(solution)):
-    #         self.set_value(
-    #             *all_children_pos[x],
-    #             all_children_possible[all_children_pos[x]][solution[x]]
-    #         )
-    #     self.display()
 
     def display(self):
         for row in range(len(self.values)):
@@ -430,7 +374,7 @@ board = CrossNumber(
          8. integer
          11. octahedral
          16. super4
-         18. integer
+         18. A053873
          20. strobogrammatic
          21. pentagonal
          23. trimorphic
@@ -446,8 +390,3 @@ board = CrossNumber(
 )
 board.display()
 board.backtrace()
-# board.set_value(0, 0, True, 10345)
-# print(board.is_possible(0, 0, False, 123))
-# board.display()
-
-# board.backtrace()

@@ -448,6 +448,10 @@ def integer(MAX_SIZE):
     return list(range(1, MAX_SIZE))
 
 
+def A053873(MAX_SIZE):
+    return [x for x in [53873, 53169] if x < MAX_SIZE]
+
+
 NUMBERS_DICT = {
     "triangle": triangle,
     "square": square,
@@ -479,6 +483,7 @@ NUMBERS_DICT = {
     "tetradic": tetradic,
     "quartan": quartan,
     "emirp": emirp,
+    'A053873':A053873
 }
 if __name__ == "__main__":
     print("main")
