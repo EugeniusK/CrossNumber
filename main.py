@@ -1,6 +1,6 @@
 import math
 import json
-
+import time
 from functions import *
 
 
@@ -29,6 +29,7 @@ class CrossNumber:
         # h_clues: list,
         # v_clues: list,
     ):
+        self.start = time.time()
         self.name = name
         """
         ### Arugments
@@ -203,55 +204,6 @@ class CrossNumber:
             str_value[idx] == str(filled_in[idx]) for idx in filled_index
         ]
 
-    def __get_possible(self, row, col, horizontal):
-        number_length = self.tier_one_lengths[(row, col, horizontal)][0]
-        filled_in = []
-        not_filled_index = []
-        possible_values = []
-        if horizontal == True:
-            for x in range(number_length):
-                filled_in.append(self.values[row][col + x])
-                if self.values[row][col + x] == None:
-                    not_filled_index.append(x)
-        else:
-            for x in range(number_length):
-                filled_in.append(self.values[row + x][col])
-                if self.values[row + x][col] == None:
-                    not_filled_index.append(x)
-        candidate = arrToInt([x if not x is None else 0 for x in filled_in])
-        tmp = 0
-        for i in range(10 ** len(not_filled_index)):
-            tmp = candidate + sum(
-                [
-                    (
-                        (
-                            i
-                            - (i // (10 ** (len(not_filled_index) - x)))
-                            * (10 ** (len(not_filled_index) - x))
-                        )
-                        // (10 ** (len(not_filled_index) - x - 1))
-                        * 10 ** (len(not_filled_index) - x - 1)
-                    )
-                    // (10 ** (len(not_filled_index) - x - 1))
-                    * 10 ** (number_length - not_filled_index[x] - 1)
-                    for x in range(len(not_filled_index))
-                ]
-            )
-            if horizontal == True:
-                if (
-                    tmp in self.all_children_possible[(row, col, True)]
-                    and len(str(tmp)) == number_length
-                ):
-                    possible_values.append(tmp)
-            else:
-                if (
-                    tmp in self.all_children_possible[(row, col, False)]
-                    and len(str(tmp)) == number_length
-                ):
-                    possible_values.append(tmp)
-
-        return possible_values
-
     def backtrace(self):
         number_tier_one = len(self.tier_one_lengths.keys())
 
@@ -284,7 +236,10 @@ class CrossNumber:
                 if safe_up_to(solution, position):
                     if position > self.max_position:
                         print(position)
+                        print(time.time() - self.start)
                         self.max_position = position
+                        self.display()
+
                     if position >= number_tier_one - 1:
                         return solution
                     position += 1
