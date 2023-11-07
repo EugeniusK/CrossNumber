@@ -17,25 +17,25 @@ def primes(n):
     return c
 
 
+prime_arr = primes(1000000)
+
 numbers = dict()
 arr = []
 
-MAX_SIZE = 1000000
-SMALL_MAX_SIZE = 10000
 
-
-def prime_numbers():
+def sophiegermain(MAX_SIZE):
     # sophiegermain
     arr = []
     n = 0
-    prime_arr = primes(2 * MAX_SIZE + 1)
     while n < MAX_SIZE:
         if n in prime_arr and 2 * n + 1 in prime_arr:
             arr.append(n)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["sophiegermain"] = sorted(list(set(arr)))
+    return arr
 
+
+def tetradic(MAX_SIZE):
     # tetradic
     arr = []
     n = 0
@@ -49,8 +49,10 @@ def prime_numbers():
             arr.append(n)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["tetradic"] = arr
+    return arr
 
+
+def quartan(MAX_SIZE):
     # quartan
     arr = []
     n = 0
@@ -68,8 +70,10 @@ def prime_numbers():
             tmp += 1
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["quartan"] = arr
+    return arr
 
+
+def emirp(MAX_SIZE):
     # emirp
     arr = []
     n = 0
@@ -78,10 +82,10 @@ def prime_numbers():
             arr.append(n)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["emirp"] = sorted(list(set(arr)))
+    return arr
 
 
-def polygonal_numbers():
+def triangle(MAX_SIZE):
     # triangle
     arr = []
     n = 0
@@ -89,8 +93,10 @@ def polygonal_numbers():
         arr.append(n * (n + 1) // 2)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["triangle"] = sorted(list(set(arr)))
+    return arr
 
+
+def square(MAX_SIZE):
     # square
     arr = []
     n = 0
@@ -98,8 +104,10 @@ def polygonal_numbers():
         arr.append(n**2)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["square"] = sorted(list(set(arr)))
+    return arr
 
+
+def pronic(MAX_SIZE):
     # pronic (n by n+1 rectangle)
     arr = []
     n = 0
@@ -107,8 +115,10 @@ def polygonal_numbers():
         arr.append(n * (n + 1))
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["pronic"] = sorted(list(set(arr)))
+    return arr
 
+
+def pentagonal(MAX_SIZE):
     # pentagonal
     arr = []
     n = 0
@@ -116,8 +126,10 @@ def polygonal_numbers():
         arr.append(n * (3 * n - 1) // 2)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["pentagonal"] = sorted(list(set(arr)))
+    return arr
 
+
+def hexagonal(MAX_SIZE):
     # hexagonal
     arr = []
     n = 0
@@ -125,8 +137,10 @@ def polygonal_numbers():
         arr.append(n * (2 * n - 1))
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["hexagonal"] = sorted(list(set(arr)))
+    return arr
 
+
+def heptagonal(MAX_SIZE):
     # heptagonal
     arr = []
     n = 0
@@ -134,8 +148,10 @@ def polygonal_numbers():
         arr.append(n * (5 * n - 3) // 2)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["heptagonal"] = sorted(list(set(arr)))
+    return arr
 
+
+def octagonal(MAX_SIZE):
     # octagonal
     arr = []
     n = 0
@@ -143,8 +159,10 @@ def polygonal_numbers():
         arr.append((2 * n + 1) ** 2)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["octagonal"] = sorted(list(set(arr)))
+    return arr
 
+
+def nonagonal(MAX_SIZE):
     # nonagonal
     arr = []
     n = 0
@@ -152,8 +170,10 @@ def polygonal_numbers():
         arr.append(n * (7 * n - 5) // 2)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["nonagonal"] = sorted(list(set(arr)))
+    return arr
 
+
+def decagonal(MAX_SIZE):
     # decagonal
     arr = []
     n = 0
@@ -161,8 +181,10 @@ def polygonal_numbers():
         arr.append(n * (4 * n - 3))
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["decagonal"] = sorted(list(set(arr)))
+    return arr
 
+
+def hendecagonal(MAX_SIZE):
     # hendecagonal
     arr = []
     n = 0
@@ -170,8 +192,10 @@ def polygonal_numbers():
         arr.append(n * (9 * n - 7) // 2)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["hendecagonal"] = sorted(list(set(arr)))
+    return arr
 
+
+def dodecagonal(MAX_SIZE):
     # dodecagonal
     arr = []
     n = 0
@@ -179,8 +203,10 @@ def polygonal_numbers():
         arr.append(6 * n * (n - 1) + 1)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["dodecagonal"] = sorted(list(set(arr)))
+    return arr
 
+
+def icosahedral(MAX_SIZE):
     # icosahedral
     arr = []
     n = 0
@@ -188,10 +214,10 @@ def polygonal_numbers():
         arr.append(10 * n**2 - 10 * n + 1)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["icosahedral"] = sorted(list(set(arr)))
+    return arr
 
 
-def polyhedral_numbers():
+def tetrahedral(MAX_SIZE):
     # tetrahedral
     arr = []
     n = 0
@@ -199,8 +225,10 @@ def polyhedral_numbers():
         arr.append(n * (n + 1) * (n + 2) // 6)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["tetrahedral"] = sorted(list(set(arr)))
+    return arr
 
+
+def octahedral(MAX_SIZE):
     # octahedral
     arr = []
     n = 0
@@ -208,10 +236,10 @@ def polyhedral_numbers():
         arr.append(n * (2 * n**2 + 1) // 3)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["octahedral"] = sorted(list(set(arr)))
+    return arr
 
 
-def recurrence_numbers():
+def padovan(MAX_SIZE):
     # padovan
     arr = [1, 0, 0]
     n = sum(arr[-3:-1])
@@ -219,36 +247,40 @@ def recurrence_numbers():
         arr.append(n)
         n = sum(arr[-3:-1])
 
-    numbers["padovan"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
-    # lucas
+
+def lucas(MAX_SIZE):
     arr = [2, 1]
     n = sum(arr[-2:])
     while n < MAX_SIZE:
         arr.append(n)
         n = sum(arr[-2:])
 
-    numbers["lucas"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
-    # perrin
+
+def perrin(MAX_SIZE):
     arr = [3, 0, 2]
     n = sum(arr[-3:-1])
     while n < MAX_SIZE:
         arr.append(n)
         n = sum(arr[-3:-1])
 
-    numbers["perrin"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
-    # tribonacci
+
+def tribonacci(MAX_SIZE):
     arr = [9, 12, -10]
     n = sum(arr[-3:])
     while n < MAX_SIZE:
         arr.append(n)
         n = sum(arr[-3:])
 
-    numbers["tribonacci"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
-    # keith
+
+def keith(MAX_SIZE):
     arr = []
     n = 10
     while n < MAX_SIZE:
@@ -260,10 +292,10 @@ def recurrence_numbers():
             arr.append(n)
         n += 1
 
-    numbers["keith"] = arr
+    return arr
 
 
-def super_numbers():
+def super3(MAX_SIZE):
     # super3
     arr = []
     n = 0
@@ -272,9 +304,10 @@ def super_numbers():
             arr.append(n)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["super3"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
-    # super4
+
+def super4(MAX_SIZE):
     arr = []
     n = 0
     while n < MAX_SIZE:
@@ -282,26 +315,62 @@ def super_numbers():
             arr.append(n)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["super4"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
 
-def recreational_numbers():
+def kaprekar(MAX_SIZE):
     # kaprekar
     arr = []
     n = 0
+
+    def iskaprekar(n):
+        # taken from geeksforgeeks
+        if n == 1:
+            return True
+
+        # Count number of digits in square
+        sq_n = n * n
+        count_digits = 1
+        while not sq_n == 0:
+            count_digits = count_digits + 1
+            sq_n = sq_n // 10
+
+        sq_n = n * n  # Recompute square as it was changed
+
+        # Split the square at different points and see if sum
+        # of any pair of splitted numbers is equal to n.
+        r_digits = 0
+        while r_digits < count_digits:
+            r_digits = r_digits + 1
+            eq_parts = (int)(math.pow(10, r_digits))
+
+            # To avoid numbers like 10, 100, 1000 (These are not
+            # Kaprekar numbers
+            if eq_parts == n:
+                continue
+
+            # Find sum of current parts and compare with n
+
+            sum = sq_n // eq_parts + sq_n % eq_parts
+            if sum == n:
+                return True
+
+        # compare with original number
+        return False
+
     while n < MAX_SIZE:
-        for a in range(0, n // 2 + 1):
-            if n**2 == int(str(a) + str(n - a)) or n ** 2 == int(str(n - a) + str(a)):
-                arr.append(n)
-                break
+        if iskaprekar(n):
+            arr.append(n)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["kaprekar"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
+
+def vampire(MAX_SIZE):
     # vampire
     arr = []
     n = 1000
-    while n < SMALL_MAX_SIZE:
+    while n < MAX_SIZE:
         list_n = sorted(list(str(n)))
         for x in range(1, math.isqrt(n) + 1):
             if n % x == 0 and sorted(list(str(x)) + list(str(n // x))) == list_n:
@@ -309,10 +378,12 @@ def recreational_numbers():
                 break
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["vampire"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
+
+def untouchable(MAX_SIZE):
     # untouchable
-    arr = list(range(1, SMALL_MAX_SIZE + 1))
+    arr = list(range(1, MAX_SIZE + 1))
 
     def sigma(n):
         """
@@ -325,13 +396,14 @@ def recreational_numbers():
                 divisors.append(n // x)
         return sum(list(set(divisors)))
 
-    for x in range(SMALL_MAX_SIZE**2):
+    for x in range(MAX_SIZE**2):
         result = sigma(x) - x
         if result in arr:
             arr.remove(result)
-    numbers["untouchable"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
-    # trimorphic
+
+def trimorphic(MAX_SIZE):
     arr = []
     n = 1
     while n < MAX_SIZE:
@@ -339,8 +411,10 @@ def recreational_numbers():
             arr.append(n)
         n += 1
     arr.remove(0) if 0 in arr else None
-    numbers["trimorphic"] = sorted(list(set(arr)))
+    return sorted(list(set(arr)))
 
+
+def strobogrammatic(MAX_SIZE):
     # strobogrammatic
     arr = []
 
@@ -365,39 +439,49 @@ def recreational_numbers():
 
     arr = [
         int(item)
-        for row in [numdef(x, x) for x in range(1, len(str(n)))]
+        for row in [numdef(x, x) for x in range(1, len(str(MAX_SIZE)))]
         for item in row
     ]
     arr.remove(0) if 0 in arr else None
-    numbers["strobogrammatic"] = sorted(arr)
+    return sorted(arr)
 
 
-def generic_numbers():
-    # integer
-    numbers["integer"] = list(range(1, MAX_SIZE))
+def integer(MAX_SIZE):
+    return list(range(1, MAX_SIZE))
 
 
-prime_numbers()
-polygonal_numbers()
-polyhedral_numbers()
-recurrence_numbers()
-super_numbers()
-recreational_numbers()
-generic_numbers()
-print(numbers)
-with open("numbers.json", "w") as f:
-    json.dump(numbers, f)
-
-"""
-
-
-# 
-arr = []
-n = 0
-while < MAX_SIZE:
-    arr.append()
-    n += 1
-arr.remove(0) if 0 in arr else None
-numbers[""] = sorted(list(set(arr)))
-
-"""
+NUMBERS_DICT = {
+    "triangle": triangle,
+    "square": square,
+    "pronic": pronic,
+    "pentagonal": pentagonal,
+    "hexagonal": hexagonal,
+    "heptagonal": heptagonal,
+    "octagonal": octagonal,
+    "nonagonal": nonagonal,
+    "decagonal": decagonal,
+    "dodecagonal": dodecagonal,
+    "icosahedral": icosahedral,
+    "tetrahedral": tetrahedral,
+    "octahedral": octahedral,
+    "padovan": padovan,
+    "lucas": lucas,
+    "perrin": perrin,
+    "tribonacci": tribonacci,
+    "keith": keith,
+    "super3": super3,
+    "super4": super4,
+    "kaprekar": kaprekar,
+    "vampire": vampire,
+    "untouchable": untouchable,
+    "strobogrammatic": strobogrammatic,
+    "trimorphic": trimorphic,
+    "integer": integer,
+    "sophiegermain": sophiegermain,
+    "tetradic": tetradic,
+    "quartan": quartan,
+    "emirp": emirp,
+}
+if __name__ == "__main__":
+    print("main")
+    print(untouchable(1000))

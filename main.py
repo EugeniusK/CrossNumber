@@ -1,7 +1,7 @@
 import math
 import json
 
-# from functions import *
+from functions import *
 
 
 def count2d(arr):
@@ -20,14 +20,16 @@ def arrToInt(arr):
 class CrossNumber:
     def __init__(
         self,
+        name: str,
         grid_outline: str,
         h_clues_pos: str,
         v_clues_pos: str,
         h_clues: str,
-        v_clues: str
+        v_clues: str,
         # h_clues: list,
         # v_clues: list,
     ):
+        self.name = name
         """
         ### Arugments
         grid_outline: a multi-line string that represents spaces with 1s
@@ -36,6 +38,13 @@ class CrossNumber:
         ### Attributes
         self.grid_outline: 2D array of 1s and 0s where 1 indicates the presence of number
 
+        self.h_clues_pos: utility array - number or 'x' depending of hint present
+        self.v_clues_pos: utility array
+
+        self.h_clues: dict of hint number (as str) and details [category, parameters (optional)]
+        self.v_clues: dict of hint number (as str) and details [category, parameters (optional)]
+
+        self.tier_one_lengths: dict of hint number (as str)
         self.h_tier_one_clues: 2D array of (func, tuple) and 0s - tuple used to encode any required values
 
         self.v_tier_one_clues: 2D array of (func, tuple) and 0s - tuple used to encode any required values
@@ -45,11 +54,9 @@ class CrossNumber:
             [int(x) if x.isnumeric() else 0 for x in row.strip()]
             for row in grid_outline.split("\n")
         ]
-
         # arrays that use numbers and 'x' to indicate location of clues
         self.h_clues_pos = []
         self.v_clues_pos = []
-
         for row in h_clues_pos.splitlines():
             new_row = []
             tmp = ""
@@ -84,7 +91,6 @@ class CrossNumber:
             if tmp != "":
                 new_row.append("".join(tmp))
             self.v_clues_pos.append(new_row)
-
         # dict that stores clue number and clue itself
         self.h_clues = dict()
         self.v_clues = dict()
@@ -134,15 +140,37 @@ class CrossNumber:
         self.all_children_possible = dict()
         self.all_children_possible_count = dict()
         self.all_children_pos = list(self.tier_one_lengths.keys())
-        with open("numbers.json", "r") as f:
-            numbers = json.load(f)
+        try:
+            with open(f"{self.name}_crossnumber.json", "r") as f:
+                numbers = json.load(f)
+                for x in self.tier_one_lengths.keys():
+                    self.all_children_possible[x] = [
+                        n
+                        for n in numbers[self.tier_one_lengths[x][1]]
+                        if len(str(n)) == self.tier_one_lengths[x][0]
+                    ]
+                    self.all_children_possible_count[x] = len(
+                        self.all_children_possible[x]
+                    )
+        except IOError:
+            self.max_lengths = dict()
             for x in self.tier_one_lengths.keys():
-                self.all_children_possible[x] = [
-                    n
-                    for n in numbers[self.tier_one_lengths[x][1]]
-                    if len(str(n)) == self.tier_one_lengths[x][0]
-                ]
-                self.all_children_possible_count[x] = len(self.all_children_possible[x])
+                if self.max_lengths.get(self.tier_one_lengths[x][1]) == None:
+                    self.max_lengths[
+                        self.tier_one_lengths[x][1]
+                    ] = self.tier_one_lengths[x][0]
+                else:
+                    self.max_lengths[self.tier_one_lengths[x][1]] = max(
+                        self.max_lengths[self.tier_one_lengths[x][1]],
+                        self.tier_one_lengths[x][0],
+                    )
+            with open(f"{self.name}_crossnumber.json", "w") as f:
+                numbers_dict_calculated = dict()
+                for x in self.max_lengths.keys():
+                    numbers_dict_calculated[x] = NUMBERS_DICT[x](
+                        10 ** self.max_lengths[x]
+                    )
+                json.dump(numbers_dict_calculated, f)
 
     def set_value(self, row, col, horizontal, value):
         if horizontal == True:
@@ -155,77 +183,97 @@ class CrossNumber:
     def clear(self):
         self.values = [[None for _ in range(self.dim[1])] for _ in range(self.dim[0])]
 
-    # def get_possible(self, row, col, horizontal):
-    #     number_length = self.tier_one_lengths[(row, col, horizontal)][0]
-    #     filled_in = []
-    #     not_filled_index = []
-    #     possible_values = []
-    #     if horizontal == True:
-    #         for x in range(number_length):
-    #             filled_in.append(self.values[row][col + x])
-    #             if self.values[row][col + x] == None:
-    #                 not_filled_index.append(x)
-    #     else:
-    #         for x in range(number_length):
-    #             filled_in.append(self.values[row + x][col])
-    #             if self.values[row + x][col] == None:
-    #                 not_filled_index.append(x)
-    #     candidate = arrToInt([x if not x is None else 0 for x in filled_in])
-    #     tmp = 0
-    #     for i in range(10 ** len(not_filled_index)):
-    #         tmp = candidate + sum(
-    #             [
-    #                 (
-    #                     (
-    #                         i
-    #                         - (i // (10 ** (len(not_filled_index) - x)))
-    #                         * (10 ** (len(not_filled_index) - x))
-    #                     )
-    #                     // (10 ** (len(not_filled_index) - x - 1))
-    #                     * 10 ** (len(not_filled_index) - x - 1)
-    #                 )
-    #                 // (10 ** (len(not_filled_index) - x - 1))
-    #                 * 10 ** (number_length - not_filled_index[x] - 1)
-    #                 for x in range(len(not_filled_index))
-    #             ]
-    #         )
-    #         if horizontal == True:
-    #             if (
-    #                 tmp in self.all_children_possible[(row, col, True)]
-    #                 and len(str(tmp)) == number_length
-    #             ):
-    #                 possible_values.append(tmp)
-    #         else:
-    #             if (
-    #                 tmp in self.all_children_possible[(row, col, False)]
-    #                 and len(str(tmp)) == number_length
-    #             ):
-    #                 possible_values.append(tmp)
+    def is_possible(self, row, col, horizontal, value):
+        filled_in = []
+        filled_index = []
+        str_value = str(value)
+        number_length = self.tier_one_lengths[(row, col, horizontal)][0]
+        if horizontal == True:
+            for x in range(number_length):
+                filled_in.append(self.values[row][col + x])
+                if self.values[row][col + x] != None:
+                    filled_index.append(x)
+        else:
+            for x in range(number_length):
+                filled_in.append(self.values[row + x][col])
+                if self.values[row + x][col] != None:
+                    filled_index.append(x)
 
-    #     return possible_values
+        return False not in [
+            str_value[idx] == str(filled_in[idx]) for idx in filled_index
+        ]
+
+    def __get_possible(self, row, col, horizontal):
+        number_length = self.tier_one_lengths[(row, col, horizontal)][0]
+        filled_in = []
+        not_filled_index = []
+        possible_values = []
+        if horizontal == True:
+            for x in range(number_length):
+                filled_in.append(self.values[row][col + x])
+                if self.values[row][col + x] == None:
+                    not_filled_index.append(x)
+        else:
+            for x in range(number_length):
+                filled_in.append(self.values[row + x][col])
+                if self.values[row + x][col] == None:
+                    not_filled_index.append(x)
+        candidate = arrToInt([x if not x is None else 0 for x in filled_in])
+        tmp = 0
+        for i in range(10 ** len(not_filled_index)):
+            tmp = candidate + sum(
+                [
+                    (
+                        (
+                            i
+                            - (i // (10 ** (len(not_filled_index) - x)))
+                            * (10 ** (len(not_filled_index) - x))
+                        )
+                        // (10 ** (len(not_filled_index) - x - 1))
+                        * 10 ** (len(not_filled_index) - x - 1)
+                    )
+                    // (10 ** (len(not_filled_index) - x - 1))
+                    * 10 ** (number_length - not_filled_index[x] - 1)
+                    for x in range(len(not_filled_index))
+                ]
+            )
+            if horizontal == True:
+                if (
+                    tmp in self.all_children_possible[(row, col, True)]
+                    and len(str(tmp)) == number_length
+                ):
+                    possible_values.append(tmp)
+            else:
+                if (
+                    tmp in self.all_children_possible[(row, col, False)]
+                    and len(str(tmp)) == number_length
+                ):
+                    possible_values.append(tmp)
+
+        return possible_values
+
     def backtrace(self):
         number_tier_one = len(self.tier_one_lengths.keys())
-        all_children_possible = dict()
-        all_children_possible_count = dict()
-        all_children_pos = list(self.tier_one_lengths.keys())
-        for x in self.tier_one_lengths.keys():
-            all_children_possible[x] = self.get_possible(*x)
-            all_children_possible_count[x] = len(self.get_possible(*x))
 
         def safe_up_to(solution, position):
             self.clear()
             for s in range(position):
                 self.set_value(
-                    *all_children_pos[s],
-                    all_children_possible[all_children_pos[s]][solution[s]]
+                    *self.all_children_pos[s],
+                    self.all_children_possible[self.all_children_pos[s]][solution[s]],
                 )
-                if not all_children_possible[all_children_pos[s + 1]][
-                    solution[s + 1]
-                ] in self.get_possible(*all_children_pos[s + 1]):
+                if not self.is_possible(
+                    *self.all_children_pos[s + 1],
+                    self.all_children_possible[self.all_children_pos[s + 1]][
+                        solution[s + 1]
+                    ],
+                ):
                     return False
             self.set_value(
-                *all_children_pos[position],
-                all_children_possible[all_children_pos[position]][solution[position]]
+                *self.all_children_pos[position],
+                self.all_children_possible[self.all_children_pos[position]][
+                    solution[position]
+                ],
             )
             return True
 
@@ -234,6 +282,9 @@ class CrossNumber:
         def backtrace_from(position):
             while True:
                 if safe_up_to(solution, position):
+                    if position > self.max_position:
+                        print(position)
+                        self.max_position = position
                     if position >= number_tier_one - 1:
                         return solution
                     position += 1
@@ -241,7 +292,10 @@ class CrossNumber:
                 else:
                     while (
                         solution[position]
-                        == all_children_possible_count[all_children_pos[position]] - 1
+                        == self.all_children_possible_count[
+                            self.all_children_pos[position]
+                        ]
+                        - 1
                     ):
                         solution[position] = None
                         position -= 1
@@ -250,15 +304,17 @@ class CrossNumber:
                     solution[position] += 1
             return None
 
+        self.max_position = 0
         solution[0] = 0
         solution = backtrace_from(0)
+        print(solution)
         self.clear()
         for x in range(len(solution)):
             self.set_value(
-                *all_children_pos[x],
-                all_children_possible[all_children_pos[x]][solution[x]]
+                *self.all_children_pos[x],
+                self.all_children_possible[self.all_children_pos[x]][solution[x]],
             )
-        self.display()
+        # self.display()
 
     # def backtrace(self):
     #     number_tier_one = len(self.tier_one_lengths.keys())
@@ -333,8 +389,21 @@ class CrossNumber:
 
 
 # board.backtrace()
-
+# board = CrossNumber(
+#     """11111
+#    1xxx1""",
+#     """1xxxx
+#    xxxxx""",
+#     """1xxx2
+#    xxxxx""",
+#     """1. dodecagonal""",
+#     """1. decagonal
+#    2. triangle""",
+# )
+# board.backtrace()
+# board.display()
 board = CrossNumber(
+    "yuichiro",
     """11111x1x111x
         1x11x1111x11
         11x1111x111x
@@ -379,7 +448,7 @@ board = CrossNumber(
          10. padovan
          12. vampire
          13. lucas
-         14. integer
+         14. untouchable
          15. hexagonal
          16. trimorphic
          17. pentagonal
@@ -422,3 +491,8 @@ board = CrossNumber(
 )
 board.display()
 board.backtrace()
+# board.set_value(0, 0, True, 10345)
+# print(board.is_possible(0, 0, False, 123))
+# board.display()
+
+# board.backtrace()
