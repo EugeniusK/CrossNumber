@@ -244,48 +244,20 @@ class CrossNumber:
             str_value[idx] == str(filled_in[idx]) for idx in filled_index
         ]
 
-    def validate(self):
-        clues_overlapped = set()
-        for row in range(self.dim[0]):
-            for col in range(self.dim[1]):
-                if self.values[row][col] != None:
-                    clues_overlapped.add(self.all_clues_per_pos[row][col])
-
     def safe_up_to(self, solution, position):
         self.clear()
-        for s in range(position):
+        for s in range(position + 1):
             self.set_value(
                 *self.all_children_pos[s],
                 self.all_children_possible[self.all_children_pos[s]][solution[s]],
             )
-            if not self.is_possible(
-                *self.all_children_pos[s + 1],
-                self.all_children_possible[self.all_children_pos[s + 1]][
-                    solution[s + 1]
-                ],
-            ):
-                return False
-        self.set_value(
-            *self.all_children_pos[position],
-            self.all_children_possible[self.all_children_pos[position]][
-                solution[position]
-            ],
-        )
+
         clues_overlapped = set()
-        n = 0
-        added = False
         for row in range(self.dim[0]):
             for col in range(self.dim[1]):
-                if self.grid_outline[row][col] != 0:
+                if self.grid_outline[row][col] != 0 and self.values[row][col] != None:
                     for clue in self.all_clues_per_pos[row][col]:
                         clues_overlapped.add(clue)
-                    n += 1
-                if n > position:
-                    added = True
-
-                    break
-            if added:
-                break
         for clue in clues_overlapped:
             val = self.get_value(*clue, self.clue_lengths[clue][0])
             if val != -1 and (
@@ -308,6 +280,8 @@ class CrossNumber:
                         print(time.time() - self.start)
                         self.max_position = position
                         self.display()
+                        print(self.all_children_pos[position])
+                        print(math.prod(self.all_children_possible_count.values()))
 
                     if position >= number_tier_one - 1:
                         return solution
