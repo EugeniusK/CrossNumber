@@ -20,7 +20,7 @@ def arrToInt(arr):
 class CrossNumber:
     def __init__(
         self,
-        name: str,
+        cross_number_name: str,
         grid_outline: str,
         h_clues_pos: str,
         v_clues_pos: str,
@@ -28,16 +28,22 @@ class CrossNumber:
         v_clues: str,
     ):
         self.start = time.time()
-        self.name = name
+        self.name = cross_number_name
         """
         ### Arugments
-        grid_outline: a multi-line string that represents spaces with 1s
-        h_clues_pos
-        v_clues_pos: a multi-line string that represents location of clues - use . to separate single digit numbers
+
+        cross_number_name: name of the crossnumber - used for .json filename
+        grid_outline: a multi-line string that represents open spaces with 1s and closed spaces with 2s
+        h_clues_pos: a multi-line string that represents location of horizontal clues using numbers and "x" - use . to separate single digit numbers
+        v_clues_pos: a multi-line string that represents location of vertical clues using numbers and "x" - use . to separate single digit numbers
+        h_clues: a multi-line string that uses "number. keyword" to represent each horizontal clue
+        h_clues: a multi-line string that uses "number. keyword" to represent each vertical clue
+
         ### Attributes
         self.dim: dimensions of crossnumber
         self.values: 2D array of all the digits in crossnumber - None for no digit
-        self.grid_outline: 2D array of 1s and 0s where 1 indicates the presence of number
+
+        self.grid_outline: 2D array of boolean indicates the presence of digit
 
         self.h_clues_pos: utility array - number or 'x' depending of hint present
         self.v_clues_pos: utility array
@@ -47,9 +53,13 @@ class CrossNumber:
 
         self.clue_lengths: dict of hint number (as str)
         self.all_clues_per_pos: clues that are linked to each square
+
+        self.tier_one_all_children_pos: list of (row, col, horizontal) where all clues are
+        self.tier_one_all_children_possibile: dict of (row,col, horizontal): [x1,x2,x3,...]
+        self.tier_one_all_children_possible_count: dict of (row, col, horizontal): count
         """
         self.grid_outline = [
-            [int(x) if x.isnumeric() else 0 for x in row.strip()]
+            [1 if x.isnumeric() else 0 for x in row.strip()]
             for row in grid_outline.split("\n")
         ]
         # arrays that use numbers and 'x' to indicate location of clues
@@ -96,7 +106,6 @@ class CrossNumber:
             self.h_clues[h_clue.split()[0][:-1]] = h_clue.split()[1:]
         for v_clue in v_clues.split("\n"):
             self.v_clues[v_clue.split()[0][:-1]] = v_clue.split()[1:]
-
         # dimensions of array
         self.dim = (
             len(self.grid_outline),
@@ -146,9 +155,17 @@ class CrossNumber:
                         number_length,
                         *self.v_clues[self.v_clues_pos[row][col]],
                     )
+        self.tier_one_all_children_possible = dict()
+        self.tier_one_all_children_possible_count = dict()
+        self.tier_one_all_children_pos = []
+
+        self.tier_three_all_children_possible = dict()
+        self.tier_three_all_children_possible_count = dict()
+        self.tier_three_all_children_pos = []
+
+        self.all_children_pos = []
         self.all_children_possible = dict()
         self.all_children_possible_count = dict()
-        self.all_children_pos = list(self.clue_lengths.keys())
         while True:
             try:
                 with open(f"{self.name}_crossnumber.json", "r") as f:
@@ -158,7 +175,31 @@ class CrossNumber:
                             n
                             for n in numbers[self.clue_lengths[x][1]]
                             if len(str(n)) == self.clue_lengths[x][0]
+                            and str(n)[0] != "0"
                         ]
+                        if (
+                            x[2] == True
+                            and len(self.h_clues[self.h_clues_pos[x[0]][x[1]]]) == 1
+                        ) or (
+                            x[2] == False
+                            and len(self.v_clues[self.v_clues_pos[x[0]][x[1]]]) == 1
+                        ):
+                            self.tier_one_all_children_pos.append(x)
+                            self.tier_one_all_children_possible_count[x] = len(
+                                self.all_children_possible[x]
+                            )
+                        elif (
+                            x[2] == True
+                            and len(self.h_clues[self.h_clues_pos[x[0]][x[1]]]) != 1
+                        ) or (
+                            x[2] == False
+                            and len(self.v_clues[self.v_clues_pos[x[0]][x[1]]]) != 1
+                        ):
+                            self.tier_three_all_children_pos.append(x)
+                            self.tier_three_all_children_possible_count[x] = len(
+                                self.all_children_possible[x]
+                            )
+
                         self.all_children_possible_count[x] = len(
                             self.all_children_possible[x]
                         )
@@ -182,21 +223,28 @@ class CrossNumber:
                             10 ** self.max_lengths[x]
                         )
                     json.dump(numbers_dict_calculated, f)
-
-        # self.all_children_pos = sorted(
-        #     self.all_children_pos,
-        #     key=lambda item: self.all_children_possible_count[item],
+        print(self.tier_one_all_children_pos)
+        print(self.tier_one_all_children_possible_count)
+        # self.tier_one_all_children_pos = sorted(
+        #     self.tier_one_all_children_pos,
+        #     key=lambda item: self.tier_one_all_children_possible_count[item],
         # )
 
-        # self.all_children_possible = dict(
+        # self.tier_one_all_children_possible = dict(
         #     sorted(
-        #         self.all_children_possible.items(),
+        #         self.tier_one_all_children_possible.items(),
         #         key=lambda item: len(item[1]),
         #     )
         # )
-        # self.all_children_possible_count = dict(
-        #     sorted(self.all_children_possible_count.items(), key=lambda item: item[1])
+        # self.tier_one_all_children_possible_count = dict(
+        #     sorted(
+        #         self.tier_one_all_children_possible_count.items(),
+        #         key=lambda item: item[1],
+        #     )
         # )
+        self.all_children_pos = (
+            self.tier_one_all_children_pos + self.tier_three_all_children_pos
+        )
 
     def set_value(self, row, col, horizontal, value):
         if horizontal == True:
@@ -246,25 +294,25 @@ class CrossNumber:
 
     def safe_up_to(self, solution, position):
         self.clear()
-        for s in range(position + 1):
+        for s in range(position):
             self.set_value(
                 *self.all_children_pos[s],
                 self.all_children_possible[self.all_children_pos[s]][solution[s]],
             )
-
-        clues_overlapped = set()
-        for row in range(self.dim[0]):
-            for col in range(self.dim[1]):
-                if self.grid_outline[row][col] != 0 and self.values[row][col] != None:
-                    for clue in self.all_clues_per_pos[row][col]:
-                        clues_overlapped.add(clue)
-        for clue in clues_overlapped:
-            val = self.get_value(*clue, self.clue_lengths[clue][0])
-            if val != -1 and (
-                val not in self.all_children_possible[clue]
-                or val <= 10 ** (self.clue_lengths[clue][0] - 1)
+            if not self.is_possible(
+                *self.all_children_pos[s + 1],
+                self.all_children_possible[self.all_children_pos[s + 1]][
+                    solution[s + 1]
+                ],
             ):
                 return False
+        self.set_value(
+            *self.all_children_pos[position],
+            self.all_children_possible[self.all_children_pos[position]][
+                solution[position]
+            ],
+        )
+        print(self.tier_three_all_children_pos, self.tier_three_all_children_possible)
         return True
 
     def backtrace(self):
@@ -280,6 +328,7 @@ class CrossNumber:
                         print(time.time() - self.start)
                         self.max_position = position
                         self.display()
+                        print(solution)
                         print(self.all_children_pos[position])
                         print(math.prod(self.all_children_possible_count.values()))
 
@@ -308,9 +357,12 @@ class CrossNumber:
         self.clear()
         for x in range(len(solution)):
             self.set_value(
-                *self.all_children_pos[x],
-                self.all_children_possible[self.all_children_pos[x]][solution[x]],
+                *self.tier_one_all_children_pos[x],
+                self.tier_one_all_children_possible[self.tier_one_all_children_pos[x]][
+                    solution[x]
+                ],
             )
+        print(solution)
 
     def display(self):
         for row in range(len(self.values)):
@@ -331,28 +383,99 @@ test = False
 if test:
     board = CrossNumber(
         "test",
-        """11111
-            11111
-            1xxxx""",
-        """1xxxx
-        2xxxx
-        xxxxx""",
-        """1xxx2
-        xxxxx
-        xxxxx""",
-        """1. triangle
-        2. triangle""",
+        """11111x1x111x
+            1x11x1111x11
+            11x1111x111x
+            x111xx111x1x
+            11x1111x1111
+            111x1xx1x1x1
+            1x111x111111
+            111x111xx1x1
+            x1x11x1x1111
+            1111x1111x1x
+            x1x111xx1111
+            1111x11111x1""",
+        """1xxxxxxx5xxx
+            xx7xx8xxxx9x
+            10xx12xxxx13xxx
+            x14xxxx15xxxxx
+            16xx17xxxx19xxx
+            22xxxxxxxxxxx
+            xx25xxx26xxxxx
+            27xxx29xxxxxxx
+            xxx30xxxx31xxx
+            33xxxx34xxxxxx
+            xxx35xxxx36xxx
+            39xxxx40xxxxxx""",
+        """1x2.3xx4x5x6x
+            xxxxxxxxxxxx
+            x11xxxxxxxxxx
+            xxxxxxxxxxxx
+            16xxx18xxxx20x21
+            xx23xxxx24xxxx
+            xxxxxx26xxxxx
+            x28xxxxxxxxxx
+            xxx30xxxx31x32x
+            xxxxx34xxxxxx
+            xxxxxxxxx37x38
+            xxxxxxxxxxxx""",
         """1. integer
-        2. integer""",
+            5. integer
+            7. integer
+            8. integer
+            9. integer
+            10. integer
+            12. integer
+            13. integer
+            14. integer
+            15. integer
+            16. integer
+            17. integer
+            19. integer
+            22. integer
+            25. integer
+            26. integer
+            27. integer
+            29. integer
+            30. integer
+            31. integer
+            33. integer
+            34. integer
+            35. integer
+            36. integer
+            39. integer
+            40. integer""",
+        """1. integer
+            2. integer
+            3. integer
+            4. integer
+            5. integer
+            6. integer
+            8. integer
+            11. integer
+            16. integer
+            18. integer
+            20. integer
+            21. integer
+            23. integer
+            24. integer
+            26. integer
+            28. integer
+            30. integer
+            31. integer
+            32. integer
+            34. integer
+            37. integer
+            38. integer""",
     )
-
-    # board.values = [[1, 0, 0, 1, 1], [1, 0, 4, 4, 0], [None, None, None, None, None]]
-
     board.display()
-    # print(board.is_possible(0, 0, False, 115))
-    # board.values = [[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, None, None, None, None]]
-    # print(board.get_value(0, 0, 5, True))
-    board.backtrace()
+    # # print(board.is_possible(0, 0, False, 115))
+    # # board.values = [[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, None, None, None, None]]
+    # # print(board.get_value(0, 0, 5, True))
+    # board.backtrace()
+    board.set_value(0, 0, True, 12345)
+    board.display()
+    print(board.is_possible(0, 2, False, 214))
 
 else:
     board = CrossNumber(
@@ -382,7 +505,7 @@ else:
             xxx35xxxx36xxx
             39xxxx40xxxxxx""",
         """1x2.3xx4x5x6x
-            xxxxxxxxxxxx
+            xxxxx8xxxxxx
             x11xxxxxxxxxx
             xxxxxxxxxxxx
             16xxx18xxxx20x21
@@ -425,14 +548,14 @@ else:
             4. icosahedral
             5. hexagonal
             6. pentagonal
-            8. integer
-            11. octahedral
+            8. all_polygonal count 7
+            11. octahedral count 1
             16. super4
             18. A053873
             20. strobogrammatic
             21. pentagonal
             23. trimorphic
-            24. triangle
+            24. triangle count 0 start 1
             26. tetradic
             28. pentagonal
             30. octahedral
@@ -443,4 +566,12 @@ else:
             38. tetrahedral""",
     )
     board.display()
+    # print(board.all_children_pos)
+    # print(
+    #     [
+    #         True if x in board.tier_one_all_children_pos else False
+    #         for x in board.all_children_pos
+    #     ]
+    # )
+    # print(board.all_children_possible)
     board.backtrace()
