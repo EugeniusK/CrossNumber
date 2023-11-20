@@ -223,8 +223,7 @@ class CrossNumber:
                             10 ** self.max_lengths[x]
                         )
                     json.dump(numbers_dict_calculated, f)
-        print(self.tier_one_all_children_pos)
-        print(self.tier_one_all_children_possible_count)
+
         # self.tier_one_all_children_pos = sorted(
         #     self.tier_one_all_children_pos,
         #     key=lambda item: self.tier_one_all_children_possible_count[item],
@@ -242,7 +241,7 @@ class CrossNumber:
         #         key=lambda item: item[1],
         #     )
         # )
-        self.all_children_pos = (
+        self.all_children_pos = sorted(
             self.tier_one_all_children_pos + self.tier_three_all_children_pos
         )
 
@@ -312,7 +311,15 @@ class CrossNumber:
                 solution[position]
             ],
         )
-        print(self.tier_three_all_children_pos, self.tier_three_all_children_possible)
+        if position == len(self.clue_lengths.keys()) - 1:
+            print("call")
+            n0 = sum([x.count(0) for x in self.values])
+            n1 = sum([x.count(1) for x in self.values])
+            if n0 * (n0 + 1) // 2 == self.get_value(5, 7, False, 2) and (n1 - 1) * (
+                2 * (n1 - 1) ** 2 + 1
+            ) // 3 == self.get_value(2, 1, False, 4):
+                return True
+            return False
         return True
 
     def backtrace(self):
@@ -357,12 +364,12 @@ class CrossNumber:
         self.clear()
         for x in range(len(solution)):
             self.set_value(
-                *self.tier_one_all_children_pos[x],
-                self.tier_one_all_children_possible[self.tier_one_all_children_pos[x]][
-                    solution[x]
-                ],
+                *self.all_children_pos[x],
+                self.all_children_possible[self.all_children_pos[x]][solution[x]],
             )
         print(solution)
+        for x in range(0, 10):
+            print(x, sum([row.count(x) for row in self.values]))
 
     def display(self):
         for row in range(len(self.values)):
@@ -505,7 +512,7 @@ else:
             xxx35xxxx36xxx
             39xxxx40xxxxxx""",
         """1x2.3xx4x5x6x
-            xxxxx8xxxxxx
+            xxxxxxxxxxxx
             x11xxxxxxxxxx
             xxxxxxxxxxxx
             16xxx18xxxx20x21
@@ -548,7 +555,6 @@ else:
             4. icosahedral
             5. hexagonal
             6. pentagonal
-            8. all_polygonal count 7
             11. octahedral count 1
             16. super4
             18. A053873
