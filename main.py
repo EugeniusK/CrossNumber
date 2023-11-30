@@ -162,6 +162,7 @@ class CrossNumber:
         self.tier_three_all_children_possible = dict()
         self.tier_three_all_children_possible_count = dict()
         self.tier_three_all_children_pos = []
+        self.tier_three_description = dict()
 
         self.all_children_pos = []
         self.all_children_possible = dict()
@@ -199,6 +200,9 @@ class CrossNumber:
                             self.tier_three_all_children_possible_count[x] = len(
                                 self.all_children_possible[x]
                             )
+                            self.tier_three_description[x] = self.v_clues[
+                                self.v_clues_pos[x[0]][x[1]]
+                            ]
 
                         self.all_children_possible_count[x] = len(
                             self.all_children_possible[x]
@@ -224,26 +228,61 @@ class CrossNumber:
                         )
                     json.dump(numbers_dict_calculated, f)
 
-        # self.tier_one_all_children_pos = sorted(
-        #     self.tier_one_all_children_pos,
-        #     key=lambda item: self.tier_one_all_children_possible_count[item],
-        # )
-
-        # self.tier_one_all_children_possible = dict(
-        #     sorted(
-        #         self.tier_one_all_children_possible.items(),
-        #         key=lambda item: len(item[1]),
-        #     )
-        # )
-        # self.tier_one_all_children_possible_count = dict(
-        #     sorted(
-        #         self.tier_one_all_children_possible_count.items(),
-        #         key=lambda item: item[1],
-        #     )
-        # )
         self.all_children_pos = sorted(
             self.tier_one_all_children_pos + self.tier_three_all_children_pos
         )
+
+        self.init_all_children_possible_count = self.all_children_possible_count
+        self.possible_digits = [
+            [[] for _ in range(self.dim[1])] for x in range(self.dim[0])
+        ]
+        for clue_pos in self.all_children_pos:
+            clue_length = self.clue_lengths[clue_pos][0]
+            horizontal = clue_pos[2]
+            for x in range(clue_length):
+                possible_digits = set()
+                for child in self.all_children_possible[clue_pos]:
+                    possible_digits.add(int(str(child)[x]))
+                if horizontal:
+                    self.possible_digits[clue_pos[0]][clue_pos[1] + x].append(
+                        possible_digits
+                    )
+                else:
+                    self.possible_digits[clue_pos[0] + x][clue_pos[1]].append(
+                        possible_digits
+                    )
+
+        for row in range(self.dim[0]):
+            for col in range(self.dim[1]):
+                if len(self.possible_digits[row][col]) != 0:
+                    self.possible_digits[row][col] = list(
+                        set.intersection(*self.possible_digits[row][col])
+                    )
+
+        for clue_pos in self.all_children_pos:
+            clue_length = self.clue_lengths[clue_pos][0]
+            horizontal = clue_pos[2]
+            for possible_val in self.all_children_possible[clue_pos]:
+                valid = True
+                for x in range(clue_length):
+                    if horizontal:
+                        if (
+                            int(str(possible_val)[x])
+                            not in self.possible_digits[clue_pos[0]][clue_pos[1] + x]
+                        ):
+                            valid = False
+                    else:
+                        if (
+                            int(str(possible_val)[x])
+                            not in self.possible_digits[clue_pos[0] + x][clue_pos[1]]
+                        ):
+                            valid = False
+
+                if not valid:
+                    self.all_children_possible[clue_pos].remove(possible_val)
+        self.all_children_possible_count = {
+            x: len(self.all_children_possible[x]) for x in self.all_children_pos
+        }
 
     def set_value(self, row, col, horizontal, value):
         if horizontal == True:
@@ -315,6 +354,15 @@ class CrossNumber:
             print("call")
             n0 = sum([x.count(0) for x in self.values])
             n1 = sum([x.count(1) for x in self.values])
+            n2 = sum([x.count(2) for x in self.values])
+            n3 = sum([x.count(3) for x in self.values])
+            n4 = sum([x.count(4) for x in self.values])
+            n5 = sum([x.count(5) for x in self.values])
+            n6 = sum([x.count(6) for x in self.values])
+            n7 = sum([x.count(7) for x in self.values])
+            n8 = sum([x.count(8) for x in self.values])
+            n9 = sum([x.count(9) for x in self.values])
+
             if n0 * (n0 + 1) // 2 == self.get_value(5, 7, False, 2) and (n1 - 1) * (
                 2 * (n1 - 1) ** 2 + 1
             ) // 3 == self.get_value(2, 1, False, 4):
@@ -337,7 +385,18 @@ class CrossNumber:
                         self.display()
                         print(solution)
                         print(self.all_children_pos[position])
-                        print(math.prod(self.all_children_possible_count.values()))
+                        print(
+                            "init", math.prod(self.all_children_possible_count.values())
+                        )
+                        print(
+                            "reduced",
+                            math.prod(self.init_all_children_possible_count.values()),
+                        )
+                        print(
+                            "factor of",
+                            math.prod(self.init_all_children_possible_count.values())
+                            / math.prod(self.all_children_possible_count.values()),
+                        )
 
                     if position >= number_tier_one - 1:
                         return solution
@@ -356,6 +415,7 @@ class CrossNumber:
                     if position < 0:
                         break
                     solution[position] += 1
+            self.display()
             return None
 
         self.max_position = 0
@@ -367,9 +427,17 @@ class CrossNumber:
                 *self.all_children_pos[x],
                 self.all_children_possible[self.all_children_pos[x]][solution[x]],
             )
-        print(solution)
-        for x in range(0, 10):
-            print(x, sum([row.count(x) for row in self.values]))
+        n0 = sum([x.count(0) for x in self.values])
+        n1 = sum([x.count(1) for x in self.values])
+        n2 = sum([x.count(2) for x in self.values])
+        n3 = sum([x.count(3) for x in self.values])
+        n4 = sum([x.count(4) for x in self.values])
+        n5 = sum([x.count(5) for x in self.values])
+        n6 = sum([x.count(6) for x in self.values])
+        n7 = sum([x.count(7) for x in self.values])
+        n8 = sum([x.count(8) for x in self.values])
+        n9 = sum([x.count(9) for x in self.values])
+        print(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9)
 
     def display(self):
         for row in range(len(self.values)):
