@@ -54,9 +54,9 @@ class CrossNumber:
         self.clue_lengths: dict of hint number (as str)
         self.all_clues_per_pos: clues that are linked to each square
 
-        self.tier_one_all_children_pos: list of (row, col, horizontal) where all clues are
-        self.tier_one_all_children_possibile: dict of (row,col, horizontal): [x1,x2,x3,...]
-        self.tier_one_all_children_possible_count: dict of (row, col, horizontal): count
+        self.t1_pos: list of (row, col, horizontal) where all clues are
+        self.t1_possibile: dict of (row,col, horizontal): [x1,x2,x3,...]
+        self.t1_possible_count: dict of (row, col, horizontal): count
         """
         self.grid_outline = [
             [1 if x.isnumeric() else 0 for x in row.strip()]
@@ -102,6 +102,7 @@ class CrossNumber:
         # dict that stores clue number and clue itself - 1: 'prime'
         self.h_clues = dict()
         self.v_clues = dict()
+
         for h_clue in h_clues.split("\n"):
             self.h_clues[h_clue.split()[0][:-1]] = h_clue.split()[1:]
         for v_clue in v_clues.split("\n"):
@@ -155,24 +156,45 @@ class CrossNumber:
                         number_length,
                         *self.v_clues[self.v_clues_pos[row][col]],
                     )
-        self.tier_one_all_children_possible = dict()
-        self.tier_one_all_children_possible_count = dict()
-        self.tier_one_all_children_pos = []
 
-        self.tier_three_all_children_possible = dict()
-        self.tier_three_all_children_possible_count = dict()
-        self.tier_three_all_children_pos = []
-        self.tier_three_description = dict()
+        # tier 1 - where there is a fixed number of possible - such as "A triangle number"
+        # tier 2 - where another value is used in the calculation
+        # tier 3 - where the digit sum of another value is used in the calculation
+        # tier 4 - where the number of a specific digit in the crossnumber is used
 
-        self.all_children_pos = []
-        self.all_children_possible = dict()
-        self.all_children_possible_count = dict()
+        # tier 1 - check if possible, set
+        # tier 2 - calculate based on other value, check if possible, set
+        # tier 3 - at the end, calculate digit sum of other value, check if valid
+        # tier 4 - at the end, check if valid
+        print(self.clue_lengths)
+        self.all_pos = []
+        self.t1_pos = []
+        self.t2_pos = []
+        self.t3_pos = []
+        self.t4_pos = []
+
+        self.all_possible = dict()
+        self.t1_possible = dict()
+        self.t2_possible = dict()
+        self.t3_possible = dict()
+        self.t4_possible = dict()
+
+        self.all_possible_count = dict()
+        self.t1_possible_count = dict()
+        self.t2_possible_count = dict()
+        self.t3_possible_count = dict()
+        self.t4_possible_count = dict()
+
+        self.t2_description = dict()
+        self.t3_description = dict()
+        self.t4_description = dict()
+
         while True:
             try:
                 with open(f"{self.name}_crossnumber.json", "r") as f:
                     numbers = json.load(f)
                     for x in self.clue_lengths.keys():
-                        self.all_children_possible[x] = [
+                        self.all_possible[x] = [
                             n
                             for n in numbers[self.clue_lengths[x][1]]
                             if len(str(n)) == self.clue_lengths[x][0]
@@ -185,10 +207,8 @@ class CrossNumber:
                             x[2] == False
                             and len(self.v_clues[self.v_clues_pos[x[0]][x[1]]]) == 1
                         ):
-                            self.tier_one_all_children_pos.append(x)
-                            self.tier_one_all_children_possible_count[x] = len(
-                                self.all_children_possible[x]
-                            )
+                            self.t1_pos.append(x)
+                            self.t1_possible_count[x] = len(self.all_possible[x])
                         elif (
                             x[2] == True
                             and len(self.h_clues[self.h_clues_pos[x[0]][x[1]]]) != 1
@@ -196,17 +216,18 @@ class CrossNumber:
                             x[2] == False
                             and len(self.v_clues[self.v_clues_pos[x[0]][x[1]]]) != 1
                         ):
-                            self.tier_three_all_children_pos.append(x)
-                            self.tier_three_all_children_possible_count[x] = len(
-                                self.all_children_possible[x]
-                            )
-                            self.tier_three_description[x] = self.v_clues[
-                                self.v_clues_pos[x[0]][x[1]]
-                            ]
+                            if x[2] == True:
+                                clue = self.h_clues[self.h_clues_pos[x[0]][x[1]]]
+                            elif x[2] == False:
+                                clue = self.v_clues[self.v_clues_pos[x[0]][x[1]]]
+                            if "count" in clue:
+                                self.t4_pos.append(x)
+                                self.t4_possible_count[x] = len(self.all_possible[x])
+                                self.t4_description[x] = [clue[0], {}]
+                                clue = clue[0:2] + [" ".join(clue[2:])]
+                                self.t4_description[x][1]["eval"] = clue[2]
 
-                        self.all_children_possible_count[x] = len(
-                            self.all_children_possible[x]
-                        )
+                        self.all_possible_count[x] = len(self.all_possible[x])
                 break
             except IOError:
                 self.max_lengths = dict()
@@ -220,6 +241,9 @@ class CrossNumber:
                             self.max_lengths[self.clue_lengths[x][1]],
                             self.clue_lengths[x][0],
                         )
+
+                print(self.max_lengths)
+                raise IndexError
                 with open(f"{self.name}_crossnumber.json", "w") as f:
                     numbers_dict_calculated = dict()
                     for x in self.max_lengths.keys():
@@ -228,20 +252,22 @@ class CrossNumber:
                         )
                     json.dump(numbers_dict_calculated, f)
 
-        self.all_children_pos = sorted(
-            self.tier_one_all_children_pos + self.tier_three_all_children_pos
-        )
+        self.all_pos = sorted(self.t1_pos) + self.t4_pos
+        """
+        Removes impossible candidates from list of possible values
+        - by looking at the intersection of digits from all clues
+        """
 
-        self.init_all_children_possible_count = self.all_children_possible_count
+        self.init_count = math.prod(self.all_possible_count.values())
         self.possible_digits = [
             [[] for _ in range(self.dim[1])] for x in range(self.dim[0])
         ]
-        for clue_pos in self.all_children_pos:
+        for clue_pos in self.all_pos:
             clue_length = self.clue_lengths[clue_pos][0]
             horizontal = clue_pos[2]
             for x in range(clue_length):
                 possible_digits = set()
-                for child in self.all_children_possible[clue_pos]:
+                for child in self.all_possible[clue_pos]:
                     possible_digits.add(int(str(child)[x]))
                 if horizontal:
                     self.possible_digits[clue_pos[0]][clue_pos[1] + x].append(
@@ -259,10 +285,10 @@ class CrossNumber:
                         set.intersection(*self.possible_digits[row][col])
                     )
 
-        for clue_pos in self.all_children_pos:
+        for clue_pos in self.all_pos:
             clue_length = self.clue_lengths[clue_pos][0]
             horizontal = clue_pos[2]
-            for possible_val in self.all_children_possible[clue_pos]:
+            for possible_val in self.all_possible[clue_pos]:
                 valid = True
                 for x in range(clue_length):
                     if horizontal:
@@ -279,10 +305,9 @@ class CrossNumber:
                             valid = False
 
                 if not valid:
-                    self.all_children_possible[clue_pos].remove(possible_val)
-        self.all_children_possible_count = {
-            x: len(self.all_children_possible[x]) for x in self.all_children_pos
-        }
+                    self.all_possible[clue_pos].remove(possible_val)
+        self.all_possible_count = {x: len(self.all_possible[x]) for x in self.all_pos}
+        self.reduced_count = math.prod(self.all_possible_count.values())
 
     def set_value(self, row, col, horizontal, value):
         if horizontal == True:
@@ -334,24 +359,20 @@ class CrossNumber:
         self.clear()
         for s in range(position):
             self.set_value(
-                *self.all_children_pos[s],
-                self.all_children_possible[self.all_children_pos[s]][solution[s]],
+                *self.all_pos[s],
+                self.all_possible[self.all_pos[s]][solution[s]],
             )
             if not self.is_possible(
-                *self.all_children_pos[s + 1],
-                self.all_children_possible[self.all_children_pos[s + 1]][
-                    solution[s + 1]
-                ],
+                *self.all_pos[s + 1],
+                self.all_possible[self.all_pos[s + 1]][solution[s + 1]],
             ):
                 return False
         self.set_value(
-            *self.all_children_pos[position],
-            self.all_children_possible[self.all_children_pos[position]][
-                solution[position]
-            ],
+            *self.all_pos[position],
+            self.all_possible[self.all_pos[position]][solution[position]],
         )
         if position == len(self.clue_lengths.keys()) - 1:
-            print("call")
+            print("call", self.t4_pos, self.t4_description)
             n0 = sum([x.count(0) for x in self.values])
             n1 = sum([x.count(1) for x in self.values])
             n2 = sum([x.count(2) for x in self.values])
@@ -363,59 +384,38 @@ class CrossNumber:
             n8 = sum([x.count(8) for x in self.values])
             n9 = sum([x.count(9) for x in self.values])
 
-            if n0 * (n0 + 1) // 2 == self.get_value(5, 7, False, 2) and (n1 - 1) * (
-                2 * (n1 - 1) ** 2 + 1
-            ) // 3 == self.get_value(2, 1, False, 4):
-                return True
-            return False
+            for pos in self.t4_pos:
+                if self.get_value(*pos, self.clue_lengths[pos][0]) not in eval(
+                    self.t4_description[pos][1]["eval"], locals()
+                ):
+                    return False
         return True
 
     def backtrace(self):
-        number_tier_one = len(self.clue_lengths.keys())
+        number_all = len(self.all_pos)
 
-        solution = [None] * number_tier_one
+        solution = [None] * number_all
 
         def backtrace_from(position):
             while True:
                 if self.safe_up_to(solution, position):
                     if position > self.max_position:
-                        print(position)
-                        print(time.time() - self.start)
+                        print(f"{position}/{number_all}", time.time() - self.start)
                         self.max_position = position
-                        self.display()
-                        print(solution)
-                        print(self.all_children_pos[position])
-                        print(
-                            "init", math.prod(self.all_children_possible_count.values())
-                        )
-                        print(
-                            "reduced",
-                            math.prod(self.init_all_children_possible_count.values()),
-                        )
-                        print(
-                            "factor of",
-                            math.prod(self.init_all_children_possible_count.values())
-                            / math.prod(self.all_children_possible_count.values()),
-                        )
-
-                    if position >= number_tier_one - 1:
+                    if position >= number_all - 1:
                         return solution
                     position += 1
                     solution[position] = 0
                 else:
                     while (
                         solution[position]
-                        == self.all_children_possible_count[
-                            self.all_children_pos[position]
-                        ]
-                        - 1
+                        == self.all_possible_count[self.all_pos[position]] - 1
                     ):
                         solution[position] = None
                         position -= 1
                     if position < 0:
                         break
                     solution[position] += 1
-            self.display()
             return None
 
         self.max_position = 0
@@ -424,9 +424,10 @@ class CrossNumber:
         self.clear()
         for x in range(len(solution)):
             self.set_value(
-                *self.all_children_pos[x],
-                self.all_children_possible[self.all_children_pos[x]][solution[x]],
+                *self.all_pos[x],
+                self.all_possible[self.all_pos[x]][solution[x]],
             )
+        self.display()
         n0 = sum([x.count(0) for x in self.values])
         n1 = sum([x.count(1) for x in self.values])
         n2 = sum([x.count(2) for x in self.values])
@@ -437,6 +438,10 @@ class CrossNumber:
         n7 = sum([x.count(7) for x in self.values])
         n8 = sum([x.count(8) for x in self.values])
         n9 = sum([x.count(9) for x in self.values])
+        print("init     ", self.reduced_count)
+        print("reduced  ", self.init_count)
+        print("factor of", self.init_count / self.reduced_count)
+
         print(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9)
 
     def display(self):
@@ -454,198 +459,164 @@ class CrossNumber:
                 print("\u254B".join(["\u2501\u2501\u2501" for _ in range(self.dim[1])]))
 
 
-test = False
-if test:
-    board = CrossNumber(
-        "test",
-        """11111x1x111x
-            1x11x1111x11
-            11x1111x111x
-            x111xx111x1x
-            11x1111x1111
-            111x1xx1x1x1
-            1x111x111111
-            111x111xx1x1
-            x1x11x1x1111
-            1111x1111x1x
-            x1x111xx1111
-            1111x11111x1""",
-        """1xxxxxxx5xxx
-            xx7xx8xxxx9x
-            10xx12xxxx13xxx
-            x14xxxx15xxxxx
-            16xx17xxxx19xxx
-            22xxxxxxxxxxx
-            xx25xxx26xxxxx
-            27xxx29xxxxxxx
-            xxx30xxxx31xxx
-            33xxxx34xxxxxx
-            xxx35xxxx36xxx
-            39xxxx40xxxxxx""",
-        """1x2.3xx4x5x6x
-            xxxxxxxxxxxx
-            x11xxxxxxxxxx
-            xxxxxxxxxxxx
-            16xxx18xxxx20x21
-            xx23xxxx24xxxx
-            xxxxxx26xxxxx
-            x28xxxxxxxxxx
-            xxx30xxxx31x32x
-            xxxxx34xxxxxx
-            xxxxxxxxx37x38
-            xxxxxxxxxxxx""",
-        """1. integer
-            5. integer
-            7. integer
-            8. integer
-            9. integer
-            10. integer
-            12. integer
-            13. integer
-            14. integer
-            15. integer
-            16. integer
-            17. integer
-            19. integer
-            22. integer
-            25. integer
-            26. integer
-            27. integer
-            29. integer
-            30. integer
-            31. integer
-            33. integer
-            34. integer
-            35. integer
-            36. integer
-            39. integer
-            40. integer""",
-        """1. integer
-            2. integer
-            3. integer
-            4. integer
-            5. integer
-            6. integer
-            8. integer
-            11. integer
-            16. integer
-            18. integer
-            20. integer
-            21. integer
-            23. integer
-            24. integer
-            26. integer
-            28. integer
-            30. integer
-            31. integer
-            32. integer
-            34. integer
-            37. integer
-            38. integer""",
-    )
-    board.display()
-    # # print(board.is_possible(0, 0, False, 115))
-    # # board.values = [[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, None, None, None, None]]
-    # # print(board.get_value(0, 0, 5, True))
-    # board.backtrace()
-    board.set_value(0, 0, True, 12345)
-    board.display()
-    print(board.is_possible(0, 2, False, 214))
+# board_yuichiro = CrossNumber(
+#     "yuichiro",
+#     """11111x1x111x
+#         1x11x1111x11
+#         11x1111x111x
+#         x111xx111x1x
+#         11x1111x1111
+#         111x1xx1x1x1
+#         1x111x111111
+#         111x111xx1x1
+#         x1x11x1x1111
+#         1111x1111x1x
+#         x1x111xx1111
+#         1111x11111x1""",
+#     """1xxxxxxx5xxx
+#         xx7xx8xxxx9x
+#         10xx12xxxx13xxx
+#         x14xxxx15xxxxx
+#         16xx17xxxx19xxx
+#         22xxxxxxxxxxx
+#         xx25xxx26xxxxx
+#         27xxx29xxxxxxx
+#         xxx30xxxx31xxx
+#         33xxxx34xxxxxx
+#         xxx35xxxx36xxx
+#         39xxxx40xxxxxx""",
+#     """1x2.3xx4x5x6x
+#         xxxxx8xxxxxx
+#         x11xxxxxxxxxx
+#         xxxxxxxxxxxx
+#         16xxx18xxxx20x21
+#         xx23xxxx24xxxx
+#         xxxxxx26xxxxx
+#         x28xxxxxxxxxx
+#         xxx30xxxx31x32x
+#         xxxxx34xxxxxx
+#         xxxxxxxxx37x38
+#         xxxxxxxxxxxx""",
+#     """1. pronic
+#         5. trimorphic
+#         7. decagonal
+#         8. pentagonal
+#         9. triangle
+#         10. padovan
+#         12. vampire
+#         13. lucas
+#         14. untouchable
+#         15. hexagonal
+#         16. trimorphic
+#         17. pentagonal
+#         19. pronic
+#         22. pronic
+#         25. super3
+#         26. kaprekar
+#         27. padovan
+#         29. sophiegermain
+#         30. sophiegermain
+#         31. perrin
+#         33. lucas
+#         34. octahedral
+#         35. hexagonal
+#         36. hexagonal
+#         39. icosahedral
+#         40. icosahedral""",
+#     """1. super3
+#         2. tribonacci
+#         3. keith
+#         4. icosahedral
+#         5. hexagonal
+#         6. pentagonal
+#         8. integer count [int(((n7-2)*n**2-(n7-4)*n)/2) for n in range(100)]
+#         11. octahedral count [int((n1-1)*(2*(n1-1)**2 + 1)/3)]
+#         16. super4
+#         18. A053873
+#         20. strobogrammatic
+#         21. pentagonal
+#         23. trimorphic
+#         24. triangle count [int(n0*(n0+1)/2)]
+#         26. tetradic
+#         28. pentagonal
+#         30. octahedral
+#         31. quartan
+#         32. perrin
+#         34. pentagonal
+#         37. emirp
+#         38. tetrahedral""",
+# )
+# board_yuichiro.backtrace()
 
-else:
-    board = CrossNumber(
-        "yuichiro",
-        """11111x1x111x
-            1x11x1111x11
-            11x1111x111x
-            x111xx111x1x
-            11x1111x1111
-            111x1xx1x1x1
-            1x111x111111
-            111x111xx1x1
-            x1x11x1x1111
-            1111x1111x1x
-            x1x111xx1111
-            1111x11111x1""",
-        """1xxxxxxx5xxx
-            xx7xx8xxxx9x
-            10xx12xxxx13xxx
-            x14xxxx15xxxxx
-            16xx17xxxx19xxx
-            22xxxxxxxxxxx
-            xx25xxx26xxxxx
-            27xxx29xxxxxxx
-            xxx30xxxx31xxx
-            33xxxx34xxxxxx
-            xxx35xxxx36xxx
-            39xxxx40xxxxxx""",
-        """1x2.3xx4x5x6x
-            xxxxxxxxxxxx
-            x11xxxxxxxxxx
-            xxxxxxxxxxxx
-            16xxx18xxxx20x21
-            xx23xxxx24xxxx
-            xxxxxx26xxxxx
-            x28xxxxxxxxxx
-            xxx30xxxx31x32x
-            xxxxx34xxxxxx
-            xxxxxxxxx37x38
-            xxxxxxxxxxxx""",
-        """1. pronic
-            5. trimorphic
-            7. decagonal
-            8. pentagonal
-            9. triangle
-            10. padovan
-            12. vampire
-            13. lucas
-            14. untouchable
-            15. hexagonal
-            16. trimorphic
-            17. pentagonal
-            19. pronic
-            22. pronic
-            25. super3
-            26. kaprekar
-            27. padovan
-            29. sophiegermain
-            30. sophiegermain
-            31. perrin
-            33. lucas
-            34. octahedral
-            35. hexagonal
-            36. hexagonal
-            39. icosahedral
-            40. icosahedral""",
-        """1. super3
-            2. tribonacci
-            3. keith
-            4. icosahedral
-            5. hexagonal
-            6. pentagonal
-            11. octahedral count 1
-            16. super4
-            18. A053873
-            20. strobogrammatic
-            21. pentagonal
-            23. trimorphic
-            24. triangle count 0 start 1
-            26. tetradic
-            28. pentagonal
-            30. octahedral
-            31. quartan
-            32. perrin
-            34. pentagonal
-            37. emirp
-            38. tetrahedral""",
-    )
-    board.display()
-    # print(board.all_children_pos)
-    # print(
-    #     [
-    #         True if x in board.tier_one_all_children_pos else False
-    #         for x in board.all_children_pos
-    #     ]
-    # )
-    # print(board.all_children_possible)
-    board.backtrace()
+
+board_ryder = CrossNumber(
+    "ryder",
+    """111x1111x1
+    1x1111x111
+    111xx111x1
+    1x1111x111
+    11x1xx1x11
+    x111x1111x
+    11x111xx11
+    1x11x1x111
+    111x1111x1
+    1x1111x1x1""",
+    """1xxx3xxxxx
+    xx7xxxx8xx
+    9xxxx10xxxx
+    xx11xxxx13xx
+    15xxxxxxx18x
+    x19xxx20xxxx
+    21xx22xxxx23x
+    xx25xxxx26xx
+    27xxx28xxxxx
+    xx29xxxxxxx
+    """,
+    """1x2x3.4x5x6
+    xxxxxxxxxx
+    xxxxxxxxxx
+    xxx12xxxx14x
+    x16xxxx17xxx
+    xxxxx20xxxx
+    21xxxxxxxx24
+    xx25xxxx26xx
+    xxxx28xxxxx
+    xxxxxxxxxx""",
+    """1. square
+    3. integer multiple 1102
+    7. integer sum [9]
+    8. square
+    9. square
+    10. square
+    11. integer sum [18]
+    13. cube
+    15. prime
+    18. prime
+    19. integer
+    20. factorial_diff
+    21. integer sum [13]
+    22. cube
+    23. integer sum [15a]
+    25. product_distinct_prime
+    26. square
+    27. square
+    28. cube
+    29. 4th_power""",
+    """1. palindrome sum [18]
+    2. power_2_backwards
+    3. product_distinct_prime
+    4. power_2
+    5. cube
+    6. integer multiple [11111]
+    12. integer multiple [11111]
+    14. palindrome sum [10, 45]
+    16. cube
+    17. integer multiple [7]
+    20. integer
+    21. integer multiple 2020
+    24. 5th_power
+    25. cube
+    26. palindrome sum [7]
+    28. integer multiple [3]""",
+)
+# board.backtrace()
