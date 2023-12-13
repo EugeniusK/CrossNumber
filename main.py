@@ -166,66 +166,178 @@ class CrossNumber:
         # tier 2 - calculate based on other value, check if possible, set
         # tier 3 - at the end, calculate digit sum of other value, check if valid
         # tier 4 - at the end, check if valid
-        print(self.clue_lengths)
+
+        self.clue_pos = {}
+        for row in range(self.dim[0]):
+            for col in range(self.dim[1]):
+                if self.h_clues_pos[row][col] != "x":
+                    self.clue_pos[self.h_clues_pos[row][col] + "a"] = (
+                        row,
+                        col,
+                        True,
+                    )
+                if self.v_clues_pos[row][col] != "x":
+                    self.clue_pos[self.v_clues_pos[row][col] + "v"] = (
+                        row,
+                        col,
+                        False,
+                    )
+
         self.all_pos = []
         self.t1_pos = []
         self.t2_pos = []
-        self.t3_pos = []
         self.t4_pos = []
 
         self.all_possible = dict()
-        self.t1_possible = dict()
-        self.t2_possible = dict()
-        self.t3_possible = dict()
-        self.t4_possible = dict()
 
         self.all_possible_count = dict()
         self.t1_possible_count = dict()
         self.t2_possible_count = dict()
-        self.t3_possible_count = dict()
         self.t4_possible_count = dict()
 
         self.t2_description = dict()
-        self.t3_description = dict()
         self.t4_description = dict()
-
         while True:
             try:
                 with open(f"{self.name}_crossnumber.json", "r") as f:
-                    numbers = json.load(f)
+                    numbers = json.load(f)  # dictionary of all values
                     for x in self.clue_lengths.keys():
+                        if x[2] == True:
+                            clue = self.h_clues[self.h_clues_pos[x[0]][x[1]]]
+                        elif x[2] == False:
+                            clue = self.v_clues[self.v_clues_pos[x[0]][x[1]]]
                         self.all_possible[x] = [
                             n
                             for n in numbers[self.clue_lengths[x][1]]
                             if len(str(n)) == self.clue_lengths[x][0]
                             and str(n)[0] != "0"
-                        ]
-                        if (
-                            x[2] == True
-                            and len(self.h_clues[self.h_clues_pos[x[0]][x[1]]]) == 1
-                        ) or (
-                            x[2] == False
-                            and len(self.v_clues[self.v_clues_pos[x[0]][x[1]]]) == 1
-                        ):
+                        ]  # initial values possible where same length and no start with zero
+                        # modified to remove unnecessary possibilities
+
+                        if "count" in clue:
+                            self.t4_pos.append(x)
+                            self.t4_possible_count[x] = len(self.all_possible[x])
+                            self.t4_description[x] = [clue[0], {}]
+                            clue = clue[0:2] + [" ".join(clue[2:])]
+                            self.t4_description[x][1]["eval"] = clue[2]
+                        elif "dsum" in clue:
+                            self.t2_pos.append(x)
+                            self.t2_possible_count[x] = len(self.all_possible[x])
+                            self.t2_description[x] = [clue[0], {}]
+                            clue = clue[0:3] + [" ".join(clue[3:])]
+                            self.t2_description[x][1]["eval"] = clue[3]
+                            self.t2_description[x][1]["n"] = self.clue_pos[clue[2]]
+                            # print(self.all_possible[x])
+                            print("23a", self.all_possible[x])
+
+                            print(
+                                "15a", self.all_possible[self.t2_description[x][1]["n"]]
+                            )
+                            print(
+                                set(
+                                    [
+                                        j
+                                        for k in [
+                                            eval(
+                                                self.t2_description[x][1]["eval"],
+                                                {},
+                                                {"n": sum([int(a) for a in str(n)])},
+                                            )
+                                            for n in self.all_possible[
+                                                self.clue_pos[clue[2]]
+                                            ]
+                                        ]
+                                        for j in k
+                                    ]
+                                )
+                            )  # possible for tier 2 position given the values that dependent can take
+
+                            self.all_possible[x] = list(
+                                set(
+                                    [
+                                        j
+                                        for k in [
+                                            eval(
+                                                self.t2_description[x][1]["eval"],
+                                                {},
+                                                {"n": sum([int(a) for a in str(n)])},
+                                            )
+                                            for n in self.all_possible[
+                                                self.clue_pos[clue[2]]
+                                            ]
+                                        ]
+                                        for j in k
+                                    ]
+                                ).intersection(set(self.all_possible[x]))
+                            )
+                            self.all_possible[self.t2_description[x][1]["n"]] = [
+                                b
+                                for b in self.all_possible[
+                                    self.t2_description[x][1]["n"]
+                                ]
+                                if eval(
+                                    self.t2_description[x][1]["eval"],
+                                    {},
+                                    {"n": sum([int(a) for a in str(b)])},
+                                )[0]
+                                in self.all_possible[x]
+                            ]
+
+                            # print(
+                            #     [
+                            #         eval(
+                            #             self.t2_description[x][1]["eval"],
+                            #             {},
+                            #             {"n": sum([int(a) for a in str(n)])},
+                            #         )
+                            #         for n in self.all_possible[self.clue_pos[clue[2]]]
+                            #     ]
+                            # )k
+                            # raise IndexError
+                            print("23a", self.all_possible[x])
+
+                            print(
+                                "15a", self.all_possible[self.t2_description[x][1]["n"]]
+                            )
+                            # raise IndexError
+                        elif "sum" in clue:
+                            self.t1_pos.append(x)
+                            clue_range = eval("".join(clue[2:]))
+                            if type(clue_range) == list:
+                                possible_sums = list(
+                                    range(clue_range[0], clue_range[1] + 1)
+                                )
+                            else:
+                                possible_sums = [clue_range]
+                            tmp = [
+                                a
+                                for a in self.all_possible[x]
+                                if sum([int(n) for n in str(a)]) in possible_sums
+                            ]
+                            self.all_possible[x] = tmp
+
+                            self.t1_possible_count[x] = len(self.all_possible[x])
+                        elif "multiple" in clue:
+                            self.t1_pos.append(x)
+                            clue_range = eval("".join(clue[2:]))
+                            if type(clue_range) == list:
+                                possible_products = list(
+                                    range(clue_range[0], clue_range[1] + 1)
+                                )
+                            else:
+                                possible_products = [clue_range]
+                            tmp = [
+                                a
+                                for a in self.all_possible[x]
+                                if (True in [a % n == 0 for n in possible_products])
+                            ]
+                            self.all_possible[x] = tmp
+
+                            self.t1_possible_count[x] = len(self.all_possible[x])
+
+                        else:
                             self.t1_pos.append(x)
                             self.t1_possible_count[x] = len(self.all_possible[x])
-                        elif (
-                            x[2] == True
-                            and len(self.h_clues[self.h_clues_pos[x[0]][x[1]]]) != 1
-                        ) or (
-                            x[2] == False
-                            and len(self.v_clues[self.v_clues_pos[x[0]][x[1]]]) != 1
-                        ):
-                            if x[2] == True:
-                                clue = self.h_clues[self.h_clues_pos[x[0]][x[1]]]
-                            elif x[2] == False:
-                                clue = self.v_clues[self.v_clues_pos[x[0]][x[1]]]
-                            if "count" in clue:
-                                self.t4_pos.append(x)
-                                self.t4_possible_count[x] = len(self.all_possible[x])
-                                self.t4_description[x] = [clue[0], {}]
-                                clue = clue[0:2] + [" ".join(clue[2:])]
-                                self.t4_description[x][1]["eval"] = clue[2]
 
                         self.all_possible_count[x] = len(self.all_possible[x])
                 break
@@ -242,8 +354,11 @@ class CrossNumber:
                             self.clue_lengths[x][0],
                         )
 
-                print(self.max_lengths)
-                raise IndexError
+                numbers_dict_calculated = dict()
+                for x in self.max_lengths.keys():
+                    numbers_dict_calculated[x] = NUMBERS_DICT[x](
+                        10 ** self.max_lengths[x]
+                    )
                 with open(f"{self.name}_crossnumber.json", "w") as f:
                     numbers_dict_calculated = dict()
                     for x in self.max_lengths.keys():
@@ -252,7 +367,7 @@ class CrossNumber:
                         )
                     json.dump(numbers_dict_calculated, f)
 
-        self.all_pos = sorted(self.t1_pos) + self.t4_pos
+        self.all_pos = sorted(self.t1_pos) + self.t2_pos + self.t4_pos
         """
         Removes impossible candidates from list of possible values
         - by looking at the intersection of digits from all clues
@@ -306,6 +421,7 @@ class CrossNumber:
 
                 if not valid:
                     self.all_possible[clue_pos].remove(possible_val)
+
         self.all_possible_count = {x: len(self.all_possible[x]) for x in self.all_pos}
         self.reduced_count = math.prod(self.all_possible_count.values())
 
@@ -372,7 +488,9 @@ class CrossNumber:
             self.all_possible[self.all_pos[position]][solution[position]],
         )
         if position == len(self.clue_lengths.keys()) - 1:
-            print("call", self.t4_pos, self.t4_description)
+            # print("call", self.t4_pos, self.t4_description)
+            # print("call", self.t2_pos, self.t2_description)
+
             n0 = sum([x.count(0) for x in self.values])
             n1 = sum([x.count(1) for x in self.values])
             n2 = sum([x.count(2) for x in self.values])
@@ -389,6 +507,35 @@ class CrossNumber:
                     self.t4_description[pos][1]["eval"], locals()
                 ):
                     return False
+            for pos in self.t2_pos:
+                n = self.get_value(
+                    *self.t2_description[pos][1]["n"], self.clue_lengths[pos][0]
+                )
+
+                # print(self.get_value(*pos, self.clue_lengths[pos][0]))
+                # print(
+                #     [
+                #         sum([int(n) for n in str(x)])
+                #         for x in eval(self.t2_description[pos][1]["eval"], locals())
+                #     ]
+                # )
+                print(
+                    time.time() - self.start,
+                    math.prod([x + 1 for x in solution]) / self.reduced_count,
+                )
+                self.display()
+                print(self.get_value(*pos, self.clue_lengths[pos][0]))
+                print(
+                    [
+                        sum([int(n) for n in str(x)])
+                        for x in eval(self.t2_description[pos][1]["eval"], locals())
+                    ]
+                )
+                if self.get_value(*pos, self.clue_lengths[pos][0]) not in [
+                    sum([int(n) for n in str(x)])
+                    for x in eval(self.t2_description[pos][1]["eval"], locals())
+                ]:
+                    return False
         return True
 
     def backtrace(self):
@@ -400,7 +547,14 @@ class CrossNumber:
             while True:
                 if self.safe_up_to(solution, position):
                     if position > self.max_position:
-                        print(f"{position}/{number_all}", time.time() - self.start)
+                        print(
+                            f"{position}/{number_all}",
+                            time.time() - self.start,
+                            math.log10(self.reduced_count),
+                            math.log10(self.init_count),
+                            self.init_count / self.reduced_count,
+                        )
+                        # self.display()
                         self.max_position = position
                     if position >= number_all - 1:
                         return solution
@@ -438,9 +592,10 @@ class CrossNumber:
         n7 = sum([x.count(7) for x in self.values])
         n8 = sum([x.count(8) for x in self.values])
         n9 = sum([x.count(9) for x in self.values])
-        print("init     ", self.reduced_count)
-        print("reduced  ", self.init_count)
+        print("init     ", math.log10(self.reduced_count))
+        print("reduced  ", math.log10(self.init_count))
         print("factor of", self.init_count / self.reduced_count)
+        print("time     ", time.time() - self.start, "seconds")
 
         print(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9)
 
@@ -566,7 +721,7 @@ board_ryder = CrossNumber(
     9xxxx10xxxx
     xx11xxxx13xx
     15xxxxxxx18x
-    x19xxx20xxxx
+    xxxxx20xxxx
     21xx22xxxx23x
     xx25xxxx26xx
     27xxx28xxxxx
@@ -577,46 +732,46 @@ board_ryder = CrossNumber(
     xxxxxxxxxx
     xxx12xxxx14x
     x16xxxx17xxx
-    xxxxx20xxxx
+    x19xxx20xxxx
     21xxxxxxxx24
     xx25xxxx26xx
     xxxx28xxxxx
     xxxxxxxxxx""",
     """1. square
     3. integer multiple 1102
-    7. integer sum [9]
+    7. integer sum 9
     8. square
     9. square
     10. square
-    11. integer sum [18]
+    11. integer sum 18
     13. cube
     15. prime
     18. prime
-    19. integer
+    19. integer count [x for x in range(100,1000) if int(str(x)[1]) == n9)
     20. factorial_diff
-    21. integer sum [13]
+    21. integer sum 13
     22. cube
-    23. integer sum [15a]
+    23. integer dsum 15a [n]
     25. product_distinct_prime
     26. square
     27. square
     28. cube
     29. 4th_power""",
-    """1. palindrome sum [18]
+    """1. palindrome sum 18
     2. power_2_backwards
     3. product_distinct_prime
     4. power_2
     5. cube
-    6. integer multiple [11111]
-    12. integer multiple [11111]
-    14. palindrome sum [10, 45]
+    6. integer multiple 11111
+    12. integer multiple 11111
+    14. palindrome sum [11, 45]
     16. cube
-    17. integer multiple [7]
-    20. integer
+    17. integer multiple 7
+    20. permutation_12345_monotonic_seq_four
     21. integer multiple 2020
     24. 5th_power
     25. cube
-    26. palindrome sum [7]
-    28. integer multiple [3]""",
+    26. palindrome sum 7
+    28. integer multiple 3""",
 )
-# board.backtrace()
+board_ryder.backtrace()

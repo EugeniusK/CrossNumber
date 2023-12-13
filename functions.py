@@ -1,4 +1,5 @@
 import math, json
+import itertools as iter
 
 
 def primes(n):
@@ -100,6 +101,39 @@ def square(MAX_SIZE):
     n = 0
     while n**2 < MAX_SIZE:
         arr.append(n**2)
+        n += 1
+
+    return sorted(arr)
+
+
+def cube(MAX_SIZE):
+    # cube
+    arr = []
+    n = 0
+    while n**3 < MAX_SIZE:
+        arr.append(n**3)
+        n += 1
+
+    return sorted(arr)
+
+
+def fourth_power(MAX_SIZE):
+    # 4th power
+    arr = []
+    n = 0
+    while n**4 < MAX_SIZE:
+        arr.append(n**4)
+        n += 1
+
+    return sorted(arr)
+
+
+def fifth_power(MAX_SIZE):
+    # 5th power
+    arr = []
+    n = 0
+    while n**5 < MAX_SIZE:
+        arr.append(n**5)
         n += 1
 
     return sorted(arr)
@@ -470,6 +504,68 @@ def A053873(MAX_SIZE):
     return [x for x in [53873, 53169] if x < MAX_SIZE]
 
 
+def palindrome(MAX_SIZE):
+    return sorted(list(set([x for x in range(MAX_SIZE) if str(x) == str(x)[::-1]])))
+
+
+def product_distinct_prime(MAX_SIZE):
+    arr = []
+    for p in prime_arr:
+        for q in prime_arr:
+            if p * q < MAX_SIZE:
+                if p != q:
+                    arr.append(p * q)
+            else:
+                break
+    return sorted(list(set(arr)))
+
+
+def power_2_backwards(MAX_SIZE):
+    n = 1
+    arr = []
+    while True:
+        if int(str(2**n)[::-1]) < MAX_SIZE:
+            arr.append(int(str(2**n)[::-1]))
+        else:
+            break
+        n += 1
+    return arr
+
+
+def power_2(MAX_SIZE):
+    n = 1
+    arr = []
+    while True:
+        if 2**n < MAX_SIZE:
+            arr.append(2**n)
+        else:
+            break
+        n += 1
+    return arr
+
+
+def prime(MAX_SIZE):
+    return [x for x in prime_arr if x < MAX_SIZE]
+
+
+def factorial_diff(MAX_SIZE):
+    arr = []
+    fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600]
+    for a in fact:
+        for b in fact:
+            if a - b < MAX_SIZE and a - b > 0:
+                arr.append(a - b)
+    return sorted(list(set(arr)))
+
+
+def permutation_12345_monotonic_seq_four(MAX_SIZE):
+    arr = []
+    for n in range(1, int(math.log10(MAX_SIZE)) + 1):
+        arr.extend([x for x in iter.product("12345", repeat=n) if len(set(x)) != 1])
+
+    return [int("".join(x)) for x in arr]
+
+
 NUMBERS_DICT = {
     "triangle": triangle,
     "square": square,
@@ -502,7 +598,18 @@ NUMBERS_DICT = {
     "quartan": quartan,
     "emirp": emirp,
     "A053873": A053873,
+    "integer": integer,
+    "square": square,
+    "cube": cube,
+    "4th_power": fourth_power,
+    "5th_power": fifth_power,
+    "palindrome": palindrome,
+    "product_distinct_prime": product_distinct_prime,
+    "power_2_backwards": power_2_backwards,
+    "power_2": power_2,
+    "prime": prime,
+    "factorial_diff": factorial_diff,
+    "permutation_12345_monotonic_seq_four": permutation_12345_monotonic_seq_four,
 }
 if __name__ == "__main__":
     print("main")
-    print(all_polygonal(100))
