@@ -152,16 +152,14 @@ class CrossNumber:
                     )
 
         # tier 1 - where there is a fixed number of possible - such as "A triangle number"
-        # tier 2 - where another value is used in the calculation
-        # tier 3 - where the digit sum of another value is used in the calculation
-        # tier 4 - where the number of a specific digit in the crossnumber is used
+        # tier 2 - everytihng else - relies on other value or the number of occurences of a specific digit
 
         # tier 1 - check if possible, set
-        # tier 2 - calculate based on other value, check if possible, set
-        # tier 3 - at the end, calculate digit sum of other value, check if valid
-        # tier 4 - at the end, check if valid
+        # tier 2 - at the end, check if valid
 
         self.clue_pos = {}
+        self.clue_pos_all = []
+
         for row in range(self.dim[0]):
             for col in range(self.dim[1]):
                 if self.h_clues_pos[row][col] != "x":
@@ -170,32 +168,37 @@ class CrossNumber:
                         col,
                         True,
                     )
+                    self.clue_pos_all.append(self.h_clues_pos[row][col] + "a")
                 if self.v_clues_pos[row][col] != "x":
                     self.clue_pos[self.v_clues_pos[row][col] + "v"] = (
                         row,
                         col,
                         False,
                     )
+                    self.clue_pos_all.append(self.v_clues_pos[row][col] + "v")
 
         self.all_pos = []
         self.t1_pos = []
         self.t2_pos = []
-        self.t4_pos = []
 
         self.all_possible = dict()
 
         self.all_possible_count = dict()
         self.t1_possible_count = dict()
         self.t2_possible_count = dict()
-        self.t4_possible_count = dict()
 
         self.t2_description = dict()
-        self.t4_description = dict()
+        self.t2_access_used = dict()
+        self.t2_count_used = dict()
+        self.t2_dsum_used = dict()
+
         while True:
             try:
                 with open(f"json/{self.name}_crossnumber.json", "r") as f:
                     numbers = json.load(f)  # dictionary of all values
                     for x in self.clue_lengths.keys():
+                        # initial values possible where same length and no start with zero
+                        # modified to remove unnecessary possibilities
                         if x[2] == True:
                             clue = self.h_clues[self.h_clues_pos[x[0]][x[1]]]
                         elif x[2] == False:
@@ -205,94 +208,52 @@ class CrossNumber:
                             for n in numbers[self.clue_lengths[x][1]]
                             if len(str(n)) == self.clue_lengths[x][0]
                             and str(n)[0] != "0"
-                        ]  # initial values possible where same length and no start with zero
-                        # modified to remove unnecessary possibilities
+                        ]
+                        if "sum" in clue or "multiple" in clue or len(clue) == 1:
+                            self.t1_pos.append(x)
+                            if len(clue) != 1:
+                                # extract range, if any, from the clue
+                                clue_range = eval("".join(clue[2:]))
+                                if type(clue_range) == list:
+                                    possible_values = list(
+                                        range(clue_range[0], clue_range[1] + 1)
+                                    )
+                                else:
+                                    possible_values = [clue_range]
 
-                        if "count" in clue:
-                            self.t4_pos.append(x)
-                            self.t4_possible_count[x] = len(self.all_possible[x])
-                            self.t4_description[x] = [clue[0], {}]
-                            clue = clue[0:2] + [" ".join(clue[2:])]
-                            self.t4_description[x][1]["eval"] = clue[2]
-                        elif "dsum" in clue:
-                            self.t2_pos.append(x)
-                            self.t2_possible_count[x] = len(self.all_possible[x])
-                            self.t2_description[x] = [clue[0], {}]
-                            clue = clue[0:3] + [" ".join(clue[3:])]
-                            self.t2_description[x][1]["eval"] = clue[3]
-                            self.t2_description[x][1]["n"] = self.clue_pos[clue[2]]
-
-                            self.all_possible[x] = list(
-                                set(
-                                    [
-                                        j
-                                        for k in [
-                                            eval(
-                                                self.t2_description[x][1]["eval"],
-                                                {},
-                                                {"n": sum([int(a) for a in str(n)])},
-                                            )
-                                            for n in self.all_possible[
-                                                self.clue_pos[clue[2]]
-                                            ]
-                                        ]
-                                        for j in k
+                                if "sum" in clue:
+                                    self.all_possible[x] = [
+                                        a
+                                        for a in self.all_possible[x]
+                                        if sum([int(n) for n in str(a)])
+                                        in possible_values
                                     ]
-                                ).intersection(set(self.all_possible[x]))
-                            )
-                            self.all_possible[self.t2_description[x][1]["n"]] = [
-                                b
-                                for b in self.all_possible[
-                                    self.t2_description[x][1]["n"]
-                                ]
-                                if eval(
-                                    self.t2_description[x][1]["eval"],
-                                    {},
-                                    {"n": sum([int(a) for a in str(b)])},
-                                )[0]
-                                in self.all_possible[x]
-                            ]
-
-                        elif "sum" in clue:
-                            self.t1_pos.append(x)
-                            clue_range = eval("".join(clue[2:]))
-                            if type(clue_range) == list:
-                                possible_sums = list(
-                                    range(clue_range[0], clue_range[1] + 1)
-                                )
-                            else:
-                                possible_sums = [clue_range]
-                            tmp = [
-                                a
-                                for a in self.all_possible[x]
-                                if sum([int(n) for n in str(a)]) in possible_sums
-                            ]
-                            self.all_possible[x] = tmp
-
-                            self.t1_possible_count[x] = len(self.all_possible[x])
-                        elif "multiple" in clue:
-                            self.t1_pos.append(x)
-                            clue_range = eval("".join(clue[2:]))
-                            if type(clue_range) == list:
-                                possible_products = list(
-                                    range(clue_range[0], clue_range[1] + 1)
-                                )
-                            else:
-                                possible_products = [clue_range]
-                            tmp = [
-                                a
-                                for a in self.all_possible[x]
-                                if (True in [a % n == 0 for n in possible_products])
-                            ]
-                            self.all_possible[x] = tmp
-
+                                elif "multiple" in clue:
+                                    self.all_possible[x] = [
+                                        a
+                                        for a in self.all_possible[x]
+                                        if (
+                                            True
+                                            in [a % n == 0 for n in possible_values]
+                                        )
+                                    ]
                             self.t1_possible_count[x] = len(self.all_possible[x])
 
                         else:
-                            self.t1_pos.append(x)
-                            self.t1_possible_count[x] = len(self.all_possible[x])
+                            self.t2_pos.append(x)
+                            self.t2_possible_count[x] = len(self.all_possible[x])
+                            self.t2_description[x] = [clue[0], " ".join(clue[1:])]
+                            for pos in self.clue_pos_all:
+                                if pos in self.t2_description[x][1]:
+                                    self.t2_dsum_used["d" + pos] = None
+                                    self.t2_access_used[pos] = None
 
+                            for count in range(10):
+                                if "n" + str(count) in self.t2_description[x][1]:
+                                    self.t2_count_used["n" + str(count)] = None
                         self.all_possible_count[x] = len(self.all_possible[x])
+                # raise IndexError
+
                 break
             except IOError:
                 self.max_lengths = dict()
@@ -320,7 +281,7 @@ class CrossNumber:
                         )
                     json.dump(numbers_dict_calculated, f)
 
-        self.all_pos = sorted(self.t1_pos) + self.t2_pos + self.t4_pos
+        self.all_pos = sorted(self.t1_pos) + self.t2_pos
         """
         Removes impossible candidates from list of possible values
         - by looking at the intersection of digits from all clues
@@ -441,31 +402,31 @@ class CrossNumber:
             self.all_possible[self.all_pos[position]][solution[position]],
         )
         if position == len(self.clue_lengths.keys()) - 1:
-            n0 = sum([x.count(0) for x in self.values])
-            n1 = sum([x.count(1) for x in self.values])
-            n2 = sum([x.count(2) for x in self.values])
-            n3 = sum([x.count(3) for x in self.values])
-            n4 = sum([x.count(4) for x in self.values])
-            n5 = sum([x.count(5) for x in self.values])
-            n6 = sum([x.count(6) for x in self.values])
-            n7 = sum([x.count(7) for x in self.values])
-            n8 = sum([x.count(8) for x in self.values])
-            n9 = sum([x.count(9) for x in self.values])
-
-            for pos in self.t4_pos:
-                if self.get_value(*pos, self.clue_lengths[pos][0]) not in eval(
-                    self.t4_description[pos][1]["eval"], locals()
-                ):
-                    return False
-            for pos in self.t2_pos:
-                n = self.get_value(
-                    *self.t2_description[pos][1]["n"], self.clue_lengths[pos][0]
+            for count in list(self.t2_count_used.keys()):
+                self.t2_count_used[count] = sum(
+                    [x.count(int(count[1])) for x in self.values]
                 )
-
-                if self.get_value(*pos, self.clue_lengths[pos][0]) not in [
-                    sum([int(n) for n in str(x)])
-                    for x in eval(self.t2_description[pos][1]["eval"], locals())
-                ]:
+            for pos in list(self.t2_access_used.keys()):
+                self.t2_access_used[pos] = self.get_value(
+                    *self.clue_pos[pos],
+                    self.clue_lengths[self.clue_pos[pos]][0],
+                )
+                self.t2_dsum_used["d" + pos] = sum(
+                    [
+                        int(x)
+                        for x in str(
+                            self.get_value(
+                                *self.clue_pos[pos],
+                                self.clue_lengths[self.clue_pos[pos]][0],
+                            )
+                        )
+                    ]
+                )
+            for pos in self.t2_pos:
+                if self.get_value(*pos, self.clue_lengths[pos][0]) not in eval(
+                    self.t2_description[pos][1],
+                    self.t2_count_used | self.t2_access_used | self.t2_dsum_used,
+                ):
                     return False
         return True
 
