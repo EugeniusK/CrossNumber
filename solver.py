@@ -2,6 +2,7 @@ import math
 import json
 import time
 from functions import *
+import itertools
 
 
 def count2d(arr):
@@ -170,12 +171,12 @@ class CrossNumber:
                     )
                     self.clue_pos_all.append(self.h_clues_pos[row][col] + "a")
                 if self.v_clues_pos[row][col] != "x":
-                    self.clue_pos[self.v_clues_pos[row][col] + "v"] = (
+                    self.clue_pos[self.v_clues_pos[row][col] + "d"] = (
                         row,
                         col,
                         False,
                     )
-                    self.clue_pos_all.append(self.v_clues_pos[row][col] + "v")
+                    self.clue_pos_all.append(self.v_clues_pos[row][col] + "d")
 
         self.all_pos = []
         self.t1_pos = []
@@ -286,7 +287,6 @@ class CrossNumber:
         Removes impossible candidates from list of possible values
         - by looking at the intersection of digits from all clues
         """
-
         self.init_count = math.prod(self.all_possible_count.values())
         self.possible_digits = [
             [[] for _ in range(self.dim[1])] for x in range(self.dim[0])
@@ -335,6 +335,139 @@ class CrossNumber:
 
                 if not valid:
                     self.all_possible[clue_pos].remove(possible_val)
+
+        for t2_pos in self.t2_pos:
+            print(t2_pos)
+            possible_results = set()
+
+            in_description_dsum = []
+            in_description_access = []
+            in_description_count = []
+            tmp = self.t2_description[t2_pos][1]
+            for pos in self.clue_pos_all:
+                if tmp.find("d" + pos) != -1:
+                    in_description_dsum.append("d" + pos)
+                    tmp = (
+                        tmp[: tmp.find("d" + pos)]
+                        + "_"
+                        + tmp[tmp.find("d" + pos) + 4 :]
+                    )
+                    self.t2_description[t2_pos][1] = self.t2_description[t2_pos][
+                        1
+                    ].replace("d" + pos, "_|_")
+
+                if tmp.find(pos) != -1:
+                    in_description_access.append("a" + pos)
+                    self.t2_description[t2_pos][1] = self.t2_description[t2_pos][
+                        1
+                    ].replace(pos, "a" + pos)
+                self.t2_description[t2_pos][1] = self.t2_description[t2_pos][1].replace(
+                    "_|_", "d" + pos
+                )
+            for n in range(10):
+                if tmp.find("n" + str(n)) != -1:
+                    in_description_count.append("n" + str(n))
+            possible_dict = (
+                {
+                    x: self.all_possible[self.clue_pos[x[1:]]]
+                    for x in in_description_access
+                }
+                | {
+                    x: list(
+                        set(
+                            [
+                                sum([int(n) for n in str(y)])
+                                for y in self.all_possible[self.clue_pos[x[1:]]]
+                            ]
+                        )
+                    )
+                    for x in in_description_dsum
+                }
+                | {
+                    x: list(range(grid_outline.count("1")))
+                    for x in in_description_count
+                }
+            )
+            duplicates = []  # access and dsum of same clue
+            for val in list(possible_dict.keys()):
+                if "d" + val[1:] in list(possible_dict.keys()) and "a" + val[
+                    1:
+                ] in list(possible_dict.keys()):
+                    duplicates.append(val)
+            for tup in itertools.product(*list(possible_dict.values())):
+                if len(duplicates) != 0:  # validate integrity between access and dsum
+                    valid = True
+                    tmp = {
+                        list(possible_dict.keys())[x]: tup[x] for x in range(len(tup))
+                    }
+                    for dup in list(set([x[1:] for x in duplicates])):
+                        if tmp["d" + dup] != sum([int(x) for x in str(tmp["a" + dup])]):
+                            valid = False
+                            continue
+                else:
+                    valid = True
+                if valid:
+                    dic = {
+                        list(possible_dict.keys())[x]: tup[x] for x in range(len(tup))
+                    }
+                    possible_results.update(
+                        set(eval(self.t2_description[t2_pos][1], dic))
+                    )
+            self.all_possible[t2_pos] = sorted(
+                list(set(self.all_possible[t2_pos]).intersection(possible_results))
+            )
+            for key in list(possible_dict.keys()):
+                if key[0] != "n":
+                    possible_dict["a" + key[1:]] = self.all_possible[
+                        self.clue_pos[key[1:]]
+                    ]
+            duplicates = []  # access and dsum of same clue
+            possible_dict_others = dict()
+            for val in list(possible_dict.keys()):
+                if "d" + val[1:] in list(possible_dict.keys()) and "a" + val[
+                    1:
+                ] in list(possible_dict.keys()):
+                    duplicates.append(val)
+            for tup in itertools.product(*list(possible_dict.values())):
+                if len(duplicates) != 0:  # validate integrity between access and dsum
+                    valid = True
+                    tmp = {
+                        list(possible_dict.keys())[x]: tup[x] for x in range(len(tup))
+                    }
+                    for dup in list(set([x[1:] for x in duplicates])):
+                        if tmp["d" + dup] != sum([int(x) for x in str(tmp["a" + dup])]):
+                            valid = False
+                            continue
+                else:
+                    valid = True
+                if valid:
+                    dic = {
+                        list(possible_dict.keys())[x]: tup[x] for x in range(len(tup))
+                    }
+
+                    if (
+                        len(
+                            set(eval(self.t2_description[t2_pos][1], dic)).intersection(
+                                list(self.all_possible[t2_pos])
+                            )
+                        )
+                        != 0
+                    ):
+                        for key, val in zip(list(possible_dict.keys()), tup):
+                            if key[0] == "a":
+                                if possible_dict_others.get(key[1:]) == None:
+                                    possible_dict_others[key[1:]] = [val]
+                                else:
+                                    possible_dict_others[key[1:]].append(val)
+            for key, val in possible_dict_others.items():
+                self.all_possible[self.clue_pos[key]] = list(
+                    set(self.all_possible[self.clue_pos[key]]).intersection(set(val))
+                )
+            # print(dic, self.all_possible[t2_pos])
+        # print(self.all_possible.keys())
+        # print("19a", self.all_possible[(5, 1, True)])
+        # print("23a", self.all_possible[(6, 8, True)])
+        # print("15a", self.all_possible[(4, 0, True)])
 
         self.all_possible_count = {x: len(self.all_possible[x]) for x in self.all_pos}
         self.reduced_count = math.prod(self.all_possible_count.values())
