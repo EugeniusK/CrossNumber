@@ -1,479 +1,615 @@
+from _ast import FloorDiv
 import math
 import json
 import time
+from typing import Any
 from functions import *
 import itertools
+import ast
 
 
-def count2d(arr):
-    total = 0
-    for row in arr:
-        total += len(row)
-    return total
+def isqrt(n):
+    return math.isqrt(n)
+
+
+def dsum(n):
+    return sum([int(x) for x in str(n)])
+
+
+def prime_factors(n):
+    arr = []
+    for x in prime_arr:
+        if n % x == 0:
+            arr.append(x)
+        if x > n:
+            break
+    return arr
+
+
+def is_multiple(a, n):
+    """
+    Returns values in arr that are multiples of n
+    Args:
+        "arr" (list or int)
+        "n" (int)
+    """
+    return [x for x in a if x % n == 0]
+
+
+def is_factor(a, n):
+    """
+    Returns values in arr that are factors of n
+    Args:
+        "arr" (list or int)
+        "n" (int)
+    """
+    return [x for x in a if n % x == 0]
+
+
+def is_pow(a, n, length, base):
+    """
+    Base indiciates whether or not n is base or exponent
+
+    n ** 2 vs 2 ** n
+    """
+    arr = []
+    if base:
+        p = 0
+        while n**p < 10**length:
+            if n**p in a:
+                arr.append(n**p)
+            p += 1
+    else:
+        base = 0
+        while base**n < 10**length:
+            if base**n in a:
+                arr.append(base**n)
+            base += 1
+    return arr
+
+
+def is_square(n):
+    return math.isqrt(n) ** 2 == n
+
+
+class FindTopOperatorOperand(ast.NodeVisitor):
+    def __init__(self):
+        self.operands = ()
+
+    def visit_BinOp(self, node):
+        left = node.left
+        right = node.right
+        if self.operands == ():
+            self.operands = (node.op, left, right)
+
+    def clear(self):
+        self.operands = ()
+
+
+class FindSqrtArgument(ast.NodeVisitor):
+    def __init__(self):
+        self.arguments = []
+
+    def visit_Call(self, node):
+        # if node.func.attr == "isqrt":
+        if isinstance(node.func, ast.Name):  # function with name
+            if node.func.id in ["sqrt", "isqrt"]:
+                # print(ast.dump(node), node.func.id)
+                self.arguments.append(ast.unparse(node.args))
+
+        elif isinstance(node.func, ast.Attribute):
+            if node.func.attr in ["sqrt", "isqrt"]:
+                # print(ast.dump(node), node.func.attr)
+                self.arguments.append(ast.unparse(node.args))
+
+    def clear(self):
+        self.arguments = []
+
+
+class FindIdentifiers(ast.NodeVisitor):
+    def __init__(self):
+        self.identifiers = []
+
+    def visit_Name(self, node):
+        self.identifiers.append(node.id)
+
+    def clear(self):
+        self.identifiers = []
+
+
+class CountDivisions(ast.NodeVisitor):
+    def __init__(self):
+        self.divisions = 0
+
+    def visit_Div(self, node):
+        self.divisions += 1
+
+    def visit_FloorDiv(self, node):
+        self.divisions += 1
 
 
 class CrossNumber:
-    def __init__(
-        self,
-        cross_number_name: str,
-        grid_outline: str,
-        h_clues_pos: str,
-        v_clues_pos: str,
-        h_clues: str,
-        v_clues: str,
-    ):
+    def __init__(self, input_board: dict) -> None:
         self.start = time.time()
-        self.name = cross_number_name
+        self.name = input_board["name"]
+        """Preprocessing of crossnumber
+        
+        Note:
+            input_board has various fields and must follow a specific structure
+
+            "name" (str): name of the crossnumber as referred to on PDF
+            "dimensions" (dict): dimensions using "height" (int) and "width" (int) attributes
+            "across clues" (dict): clues are identified by number (as on PDF) + "a"
+            "down clues" (dict): clues are identified by number (as on PDF) + "d"
+
+            individual clues are initially represented by
+
+            "type" (str): broad classification of the clue - integer if unsure
+            "eval" (str, optional): any condition given as a valid Python expression
+            "multiple" (str, optional): a condition where the number must be a multiple of a constant or other numbers
+                given as a valid Python expression
+            "sum" (str, optional): a condition where the sum of the digits of the number must be a multiple of a constant or other numbers
+                given as a valid Python expression
+            "hint" (str, optional): hint for the given clue as on PDF
+
+            then additional information added as needed by the program
+
+            "pos" (tuple of (int, int, bool)): position of the clue 
+            
+        Args:
+            input_board (dict): information about the crossnumber
         """
-        ### Arugments
 
-        cross_number_name: name of the crossnumber - used for .json filename
-        grid_outline: a multi-line string that represents open spaces with 1s and closed spaces with 2s
-        h_clues_pos: a multi-line string that represents location of horizontal clues using numbers and "x" - use . to separate single digit numbers
-        v_clues_pos: a multi-line string that represents location of vertical clues using numbers and "x" - use . to separate single digit numbers
-        h_clues: a multi-line string that uses "number. keyword" to represent each horizontal clue
-        h_clues: a multi-line string that uses "number. keyword" to represent each vertical clue
+        if input_board.get("board layout") is None:
+            raise AttributeError("Missing board layout data")
+        else:
+            if not isinstance(input_board.get("board layout"), list):
+                raise AttributeError("Board layout data should be a 2D array")
+            elif isinstance(input_board.get("board layout"), list) and not isinstance(
+                input_board.get("board layout")[0], list
+            ):
+                raise AttributeError("Board layout data should be a 2D array")
 
-        ### Attributes
-        self.dim: dimensions of crossnumber
-        self.values: 2D array of all the digits in crossnumber - None for no digit
+        if input_board.get("dimensions") is None:
+            raise AttributeError("Missing board dimensions")
+        else:
+            if not isinstance(input_board.get("dimensions"), dict):
+                raise AttributeError("Board dimensions should be as a dict")
+            else:
+                if (
+                    "height" not in input_board.get("dimensions").keys()
+                    or "width" not in input_board.get("dimensions").keys()
+                ):
+                    raise AttributeError(
+                        f"Board dimensions are missing {' and '.join([attr for attr in ['height', 'width'] if attr not in input_board.get('dimensions').keys()])}"
+                    )
 
-        self.grid_outline: 2D array of boolean indicates the presence of digit
-
-        self.h_clues_pos: utility array - number or 'x' depending of hint present
-        self.v_clues_pos: utility array
-
-        self.h_clues: dict of hint number (as str) and details [category, parameters (optional)]
-        self.v_clues: dict of hint number (as str) and details [category, parameters (optional)]
-
-        self.clue_lengths: dict of hint number (as str)
-        self.all_clues_per_pos: clues that are linked to each square
-
-        self.t1_pos: list of (row, col, horizontal) where all clues are
-        self.t1_possibile: dict of (row,col, horizontal): [x1,x2,x3,...]
-        self.t1_possible_count: dict of (row, col, horizontal): count
-        """
-        self.grid_outline = [
-            [1 if x.isnumeric() else 0 for x in row.strip()]
-            for row in grid_outline.split("\n")
-        ]
-        # arrays that use numbers and 'x' to indicate location of clues
-        self.h_clues_pos = []
-        self.v_clues_pos = []
-        for row in h_clues_pos.splitlines():
-            new_row = []
-            tmp = ""
-            for c in row.strip():
-                if c == ".":
-                    new_row.append("".join(tmp))
-                    tmp = ""
-                elif c != "x":
-                    tmp += c
-                else:
-                    if tmp != "":
-                        new_row.append("".join(tmp))
-                    new_row.append("x")
-                    tmp = ""
-            if tmp != "":
-                new_row.append("".join(tmp))
-            self.h_clues_pos.append(new_row)
-        for row in v_clues_pos.splitlines():
-            new_row = []
-            tmp = ""
-            for c in row.strip():
-                if c == ".":
-                    new_row.append("".join(tmp))
-                    tmp = ""
-                elif c != "x":
-                    tmp += c
-                else:
-                    if tmp != "":
-                        new_row.append("".join(tmp))
-                    new_row.append("x")
-                    tmp = ""
-            if tmp != "":
-                new_row.append("".join(tmp))
-            self.v_clues_pos.append(new_row)
-        # dict that stores clue number and clue itself - 1: 'prime'
-        self.h_clues = dict()
-        self.v_clues = dict()
-
-        for h_clue in h_clues.split("\n"):
-            self.h_clues[h_clue.split()[0][:-1]] = h_clue.split()[1:]
-        for v_clue in v_clues.split("\n"):
-            self.v_clues[v_clue.split()[0][:-1]] = v_clue.split()[1:]
-        # dimensions of array
+        if len(input_board.get("board layout")) != input_board.get("dimensions").get(
+            "height"
+        ):
+            raise ValueError("Board height is incorrect")
+        elif False in [
+            True if len(row) == input_board.get("dimensions").get("width") else False
+            for row in input_board.get("board layout")
+        ]:
+            raise ValueError("Board width is incorrect")
         self.dim = (
-            len(self.grid_outline),
-            count2d(self.grid_outline) // len(self.grid_outline),
+            input_board["dimensions"]["height"],
+            input_board["dimensions"]["width"],
         )
-        # values in the array
+        self.board_layout = input_board["board layout"]
+        # provides a mapping from verbose position to exact position
+        # example: 15a -> (0,0,True)
+        # (row, col, horizontal?): (int, int, bool)
+        self.verbose_pos_pos_mapping = dict()
+        pos_verbose_pos_mapping = dict()
+        for row in range(self.dim[0]):
+            for col in range(self.dim[1]):
+                if input_board["board layout"][row][col] > 0:
+                    if (
+                        str(input_board["board layout"][row][col]) + "a"
+                        in input_board["across clues"].keys()
+                    ):
+                        self.verbose_pos_pos_mapping[
+                            str(input_board["board layout"][row][col]) + "a"
+                        ] = (row, col, True)
+                        pos_verbose_pos_mapping[(row, col, True)] = (
+                            str(input_board["board layout"][row][col]) + "a"
+                        )
+                    if (
+                        str(input_board["board layout"][row][col]) + "d"
+                        in input_board["down clues"].keys()
+                    ):
+                        self.verbose_pos_pos_mapping[
+                            str(input_board["board layout"][row][col]) + "d"
+                        ] = (row, col, False)
+                        pos_verbose_pos_mapping[(row, col, False)] = (
+                            str(input_board["board layout"][row][col]) + "d"
+                        )
+
+        # numbers in the cross number
         self.values = [[None for _ in range(self.dim[1])] for _ in range(self.dim[0])]
-        # lengths of tier 1 functions to self.clue_lengths - (row, col, horizontal): (length, clue)
-        self.clue_lengths = dict()
-        # which clues affect the value
-        self.all_clues_per_pos = [
-            [[] for _ in range(self.dim[1])] for _ in range(self.dim[0])
-        ]
-        for row in range(self.dim[0]):
-            for col in range(self.dim[1]):
-                if self.h_clues_pos[row][col].isnumeric():
-                    number_length = 0
-                    tmp_col = col
 
-                    while tmp_col < self.dim[1]:
-                        if self.grid_outline[row][tmp_col] == 1:
-                            self.all_clues_per_pos[row][tmp_col].append(
-                                (row, col, True)
-                            )
-                            number_length += 1
-                            tmp_col += 1
-                        else:
-                            break
-                    self.clue_lengths[(row, col, True)] = (
-                        number_length,
-                        *self.h_clues[self.h_clues_pos[row][col]],
-                    )
-                if self.v_clues_pos[row][col].isnumeric():
-                    number_length = 0
-                    tmp_row = row
+        # determine the length of nubmers in the crossnumber
+        # and the type of nubmers it accepts
+        # (row, col, horizontal?): length (int)
+        verbose_pos_clue_lengths = dict()
+        # (row, col, horziontal?): type of clue (str)
+        verbose_pos_clue_type = dict()
 
-                    while tmp_row < self.dim[0]:
-                        if self.grid_outline[tmp_row][col] == 1:
-                            self.all_clues_per_pos[tmp_row][col].append(
-                                (row, col, False)
-                            )
-                            number_length += 1
-                            tmp_row += 1
-                        else:
-                            break
-                    self.clue_lengths[(row, col, False)] = (
-                        number_length,
-                        *self.v_clues[self.v_clues_pos[row][col]],
-                    )
+        for verbose_pos, pos in self.verbose_pos_pos_mapping.items():
+            verbose_pos_clue_lengths[verbose_pos] = 0
+            length = 1
+            if pos[2]:
+                while (
+                    pos[1] + length < self.dim[1]
+                    and input_board["board layout"][pos[0]][pos[1] + length] != -1
+                ):
+                    length += 1
+                verbose_pos_clue_lengths[verbose_pos] = length
+                verbose_pos_clue_type[verbose_pos] = input_board["across clues"][
+                    verbose_pos
+                ]["type"]
+            else:
+                while (
+                    pos[0] + length < self.dim[0]
+                    and input_board["board layout"][pos[0] + length][pos[1]] != -1
+                ):
+                    length += 1
+                verbose_pos_clue_lengths[verbose_pos] = length
+                verbose_pos_clue_type[verbose_pos] = input_board["down clues"][
+                    verbose_pos
+                ]["type"]
 
-        # tier 1 - where there is a fixed number of possible - such as "A triangle number"
-        # tier 2 - everytihng else - relies on other value or the number of occurences of a specific digit
+        self.all_clues = input_board["across clues"] | input_board["down clues"]
+        self.pos_all_possible = dict()
+        while True:
+            try:
+                with open(
+                    f"json/{self.name}_crossnumber.json", "r", encoding="utf8"
+                ) as f:
+                    numbers_possible = json.load(f)  # dictionary of all values
+                    for verbose_pos, clue in (self.all_clues).items():
+                        if self.all_clues[verbose_pos]["type"] not in NUMBERS_DICT:
+                            raise KeyError(f"{clue['type']} is not a valid clue")
+                        # only assign numbers that have same length as required on crossnumber
+                        self.pos_all_possible[
+                            self.verbose_pos_pos_mapping[verbose_pos]
+                        ] = [
+                            n
+                            for n in numbers_possible[clue["type"]]
+                            if 10 ** (verbose_pos_clue_lengths[verbose_pos] - 1)
+                            <= n
+                            < 10 ** verbose_pos_clue_lengths[verbose_pos]
+                        ]
+                break
+            except FileNotFoundError:
+                max_length = dict()
+                for verbose_pos, length in verbose_pos_clue_lengths.items():
+                    if max_length.get(self.all_clues[verbose_pos]["type"]) is None:
+                        max_length[self.all_clues[verbose_pos]["type"]] = length
+                    else:
+                        max_length[self.all_clues[verbose_pos]["type"]] = max(
+                            max_length[self.all_clues[verbose_pos]["type"]], length
+                        )
+                with open(
+                    f"json/{self.name}_crossnumber.json", "w", encoding="utf8"
+                ) as f:
+                    numbers_dict_calculated = dict()
+                    for clue, length in max_length.items():
+                        numbers_dict_calculated[clue] = NUMBERS_DICT[clue](10**length)
+                    json.dump(numbers_dict_calculated, f)
 
-        # tier 1 - check if possible, set
-        # tier 2 - at the end, check if valid
+        self.count = dict()
+        self.count["init"] = math.prod([len(x) for x in self.pos_all_possible.values()])
 
-        self.clue_pos = {}
-        self.clue_pos_all = []
+        # tier 1 - there are fixed possibilities
+        # tier 2 - there are varying possibilities based on other factors beyond the number
+        self.all_pos = self.verbose_pos_pos_mapping.keys()
+        self.all_id_access_dsum_count = (
+            ["a" + v for v in self.all_pos]
+            + ["d" + v for v in self.all_pos]
+            + ["n" + str(n) for n in range(10)]
+        )
 
-        for row in range(self.dim[0]):
-            for col in range(self.dim[1]):
-                if self.h_clues_pos[row][col] != "x":
-                    self.clue_pos[self.h_clues_pos[row][col] + "a"] = (
-                        row,
-                        col,
-                        True,
-                    )
-                    self.clue_pos_all.append(self.h_clues_pos[row][col] + "a")
-                if self.v_clues_pos[row][col] != "x":
-                    self.clue_pos[self.v_clues_pos[row][col] + "d"] = (
-                        row,
-                        col,
-                        False,
-                    )
-                    self.clue_pos_all.append(self.v_clues_pos[row][col] + "d")
-
-        self.all_pos = []
         self.t1_pos = []
         self.t2_pos = []
-
-        self.all_possible = dict()
-
-        self.all_possible_count = dict()
-        self.t1_possible_count = dict()
-        self.t2_possible_count = dict()
-
         self.t2_description = dict()
+
         self.t2_access_used = dict()
         self.t2_count_used = dict()
         self.t2_dsum_used = dict()
 
-        while True:
-            try:
-                with open(f"json/{self.name}_crossnumber.json", "r") as f:
-                    numbers = json.load(f)  # dictionary of all values
-                    for x in self.clue_lengths.keys():
-                        # initial values possible where same length and no start with zero
-                        # modified to remove unnecessary possibilities
-                        if x[2] == True:
-                            clue = self.h_clues[self.h_clues_pos[x[0]][x[1]]]
-                        elif x[2] == False:
-                            clue = self.v_clues[self.v_clues_pos[x[0]][x[1]]]
-                        self.all_possible[x] = [
-                            n
-                            for n in numbers[self.clue_lengths[x][1]]
-                            if len(str(n)) == self.clue_lengths[x][0]
-                            and str(n)[0] != "0"
-                        ]
-                        if "sum" in clue or "multiple" in clue or len(clue) == 1:
-                            self.t1_pos.append(x)
-                            if len(clue) != 1:
-                                # extract range, if any, from the clue
-                                clue_range = eval("".join(clue[2:]))
-                                if type(clue_range) == list:
-                                    possible_values = list(
-                                        range(clue_range[0], clue_range[1] + 1)
+        find_operator_operand = FindTopOperatorOperand()
+        find_sqrt_argument = FindSqrtArgument()
+        find_identifiers = FindIdentifiers()
+
+        # print(self.pos_all_possible[self.verbose_pos_pos_mapping["26d"]])
+
+        # print(verbose_pos_clue_lengths)
+        for verbose, clue in (
+            input_board["across clues"] | input_board["down clues"]
+        ).items():
+            pos = self.verbose_pos_pos_mapping[verbose]
+            if clue.get("eval") is None:
+                self.t1_pos.append(pos)
+            else:
+                self.t2_pos.append(pos)
+                if clue["eval"].get("expr") is not None:
+                    expr = clue["eval"]["expr"]
+                elif clue["eval"].get("dsum") is not None:
+                    expr = clue["eval"]["dsum"]
+                elif clue["eval"].get("multiple") is not None:
+                    expr = clue["eval"]["multiple"]
+
+                if expr[0] != "[" and expr[-1] != "]":
+                    expr = "[" + expr + "]"
+                for verbose_pos in sorted(self.all_pos)[::-1]:
+                    length = len(verbose_pos)
+                    access_indexes = [
+                        n
+                        for n in range(len(expr) - length + 1)
+                        if (expr[n : n + length] == verbose_pos)
+                        and (
+                            (
+                                n > 0
+                                and not expr[n - 1].isnumeric()
+                                and expr[n - 1] != "d"
+                            )
+                            or n == 0
+                        )
+                    ]
+                    idx = expr.find(verbose_pos)
+                    added = 0
+                    # insert "a" before some identifiers as 15a is invalid
+                    # prevents same identifier twice - 5a, 15a
+                    for idx in access_indexes:
+                        expr = expr[: idx + added] + "a" + expr[added + idx :]
+                        added += 1
+
+                    if added != 0:
+                        self.t2_access_used["a" + verbose_pos] = 0
+                    if expr.find("d" + verbose_pos) != -1:
+                        self.t2_dsum_used["d" + verbose_pos] = 0
+                for n in range(10):
+                    if "n" + str(n) in expr:
+                        self.t2_count_used["n" + str(n)] = 0
+
+                # using the expr, tries to find whether number is a multiple of something
+                # or another expr is divisible by something
+                # for example, 15a = 15d * 15 -> 15a is a multiple of 15
+                # ALGORITHMIC DETERMINATION OF STUFF
+                if clue["eval"].get("expr") is not None:
+                    self.t2_description[pos] = expr
+                elif clue["eval"].get("dsum") is not None:
+                    clue_length = verbose_pos_clue_lengths[verbose]
+                    self.t2_description[
+                        pos
+                    ] = f"[x for x in range({10 ** (clue_length-1)}, {10** clue_length}) if dsum(x) in {expr}]"
+                elif clue["eval"].get("multiple") is not None:
+                    clue_length = verbose_pos_clue_lengths[verbose]
+                    self.t2_description[
+                        pos
+                    ] = f"[x for x in range({10 ** (clue_length-1)}, {10** clue_length}) if True in [x % ex == 0 for ex in {expr}]]"
+
+            if clue.get("multiple") is not None:
+                find_identifiers.visit(ast.parse(clue["multiple"]))
+                if len(find_identifiers.identifiers) == 0:
+                    if isinstance(eval(clue["multiple"]), list):  # multiple arguments
+                        argument_arr = eval(clue["multiple"])
+                        if len(argument_arr) == 2:
+                            if argument_arr[0] is None:
+                                arr = list(range(0, argument_arr[1] + 1))
+                            elif argument_arr[1] is None:
+                                arr = list(
+                                    range(
+                                        argument_arr[0],
+                                        10 ** verbose_pos_clue_lengths[verbose],
                                     )
-                                else:
-                                    possible_values = [clue_range]
+                                )
+                            elif isinstance(argument_arr[0], int) and isinstance(
+                                argument_arr[1], int
+                            ):
+                                arr = list(range(argument_arr[0], argument_arr[1] + 1))
+                    elif isinstance(eval(clue["multiple"]), int):
+                        self.pos_all_possible[pos] = is_multiple(
+                            self.pos_all_possible[pos], eval(clue["multiple"])
+                        )
+                find_identifiers.clear()
 
-                                if "sum" in clue:
-                                    self.all_possible[x] = [
-                                        a
-                                        for a in self.all_possible[x]
-                                        if sum([int(n) for n in str(a)])
-                                        in possible_values
-                                    ]
-                                elif "multiple" in clue:
-                                    self.all_possible[x] = [
-                                        a
-                                        for a in self.all_possible[x]
-                                        if (
-                                            True
-                                            in [a % n == 0 for n in possible_values]
-                                        )
-                                    ]
-                            self.t1_possible_count[x] = len(self.all_possible[x])
-
-                        else:
-                            self.t2_pos.append(x)
-                            self.t2_possible_count[x] = len(self.all_possible[x])
-                            self.t2_description[x] = [clue[0], " ".join(clue[1:])]
-                            for pos in self.clue_pos_all:
-                                if pos in self.t2_description[x][1]:
-                                    self.t2_dsum_used["d" + pos] = None
-                                    self.t2_access_used[pos] = None
-
-                            for count in range(10):
-                                if "n" + str(count) in self.t2_description[x][1]:
-                                    self.t2_count_used["n" + str(count)] = None
-                        self.all_possible_count[x] = len(self.all_possible[x])
-                # raise IndexError
-
-                break
-            except IOError:
-                self.max_lengths = dict()
-                for x in self.clue_lengths.keys():
-                    if self.max_lengths.get(self.clue_lengths[x][1]) == None:
-                        self.max_lengths[self.clue_lengths[x][1]] = self.clue_lengths[
+            if clue.get("dsum") is not None:
+                find_identifiers.visit(ast.parse(clue["dsum"]))
+                if len(find_identifiers.identifiers) == 0:
+                    if isinstance(eval(clue["dsum"]), list):  # multiple arguments
+                        argument_arr = eval(clue["dsum"])
+                        if len(argument_arr) == 2:
+                            if argument_arr[0] is None:
+                                arr = list(range(0, argument_arr[1] + 1))
+                            elif argument_arr[1] is None:
+                                arr = list(
+                                    range(
+                                        argument_arr[0],
+                                        10 ** verbose_pos_clue_lengths[verbose],
+                                    )
+                                )
+                            elif isinstance(argument_arr[0], int) and isinstance(
+                                argument_arr[1], int
+                            ):
+                                arr = list(range(argument_arr[0], argument_arr[1] + 1))
+                            self.pos_all_possible[pos] = [
+                                x for x in self.pos_all_possible[pos] if dsum(x) in arr
+                            ]
+                    elif isinstance(eval(clue["dsum"]), int):
+                        self.pos_all_possible[pos] = [
                             x
-                        ][0]
-                    else:
-                        self.max_lengths[self.clue_lengths[x][1]] = max(
-                            self.max_lengths[self.clue_lengths[x][1]],
-                            self.clue_lengths[x][0],
-                        )
+                            for x in self.pos_all_possible[pos]
+                            if dsum(x) == eval(clue["dsum"])
+                        ]
+                find_identifiers.clear()
+        # print(self.pos_all_possible[self.verbose_pos_pos_mapping["26d"]])
+        # raise IndexError
+        self.unfiltered_expr = []
+        for pos, expr in self.t2_description.items():
+            find_operator_operand.visit(ast.parse(expr))
+            find_sqrt_argument.visit(ast.parse(expr))
+            # returns (operator, left operand, right operand, index of constant)
+            # top operand
+            operands = find_operator_operand.operands
+            sqrt_arguments = find_sqrt_argument.arguments
+            find_operator_operand.clear()
+            find_sqrt_argument.clear()
 
-                numbers_dict_calculated = dict()
-                for x in self.max_lengths.keys():
-                    numbers_dict_calculated[x] = NUMBERS_DICT[x](
-                        10 ** self.max_lengths[x]
+            # only one operand in expression
+            if operands:
+                if isinstance(operands[0], ast.Mult):
+                    self.unfiltered_expr.append(
+                        (operands[0], pos, operands[1], operands[2])
                     )
-                with open(f"json/{self.name}_crossnumber.json", "w") as f:
-                    numbers_dict_calculated = dict()
-                    for x in self.max_lengths.keys():
-                        numbers_dict_calculated[x] = NUMBERS_DICT[x](
-                            10 ** self.max_lengths[x]
-                        )
-                    json.dump(numbers_dict_calculated, f)
+                elif isinstance(operands[0], (ast.Div, ast.FloorDiv)):
+                    self.unfiltered_expr.append(
+                        (operands[0], pos, operands[1], operands[2])
+                    )
+                elif isinstance(operands[0], ast.Pow):
+                    self.unfiltered_expr.append(
+                        (operands[0], pos, operands[1], operands[2])
+                    )
+            if sqrt_arguments:
+                # print(pos_verbose_pos_mapping[pos], sqrt_arguments)
+                for argument in sqrt_arguments:
+                    find_identifiers.visit(ast.parse(argument))
+                    if (
+                        len(find_identifiers.identifiers) == 1
+                        and find_identifiers.identifiers[0][0] == "a"
+                    ):
+                        # print(find_identifiers.identifiers[0])
 
-        self.all_pos = sorted(self.t1_pos) + self.t2_pos
-        """
-        Removes impossible candidates from list of possible values
-        - by looking at the intersection of digits from all clues
-        """
-        self.init_count = math.prod(self.all_possible_count.values())
-        self.possible_digits = [
-            [[] for _ in range(self.dim[1])] for x in range(self.dim[0])
+                        pos = self.verbose_pos_pos_mapping[
+                            find_identifiers.identifiers[0][1:]
+                        ]
+                        verbose_pos = find_identifiers.identifiers[0][1:]
+                        self.pos_all_possible[pos] = [
+                            x
+                            for x in self.pos_all_possible[pos]
+                            if is_square(eval(argument, {"a" + verbose_pos: x}))
+                        ]
+                    find_identifiers.clear()
+
+        for expr in self.unfiltered_expr:
+            if (
+                isinstance(expr[2], ast.Name)
+                and isinstance(expr[3], ast.Constant)
+                and expr[2].id in self.all_id_access_dsum_count
+            ):
+                if isinstance(expr[0], ast.Mult):
+                    self.pos_all_possible[expr[1]] = is_multiple(
+                        self.pos_all_possible[expr[1]], expr[3].value
+                    )
+                elif isinstance(expr[0], (ast.FloorDiv, ast.Div)):
+                    self.pos_all_possible[
+                        self.verbose_pos_pos_mapping[expr[2].id[1:]]
+                    ] = is_multiple(
+                        self.pos_all_possible[
+                            self.verbose_pos_pos_mapping[expr[2].id[1:]]
+                        ],
+                        expr[3].value,
+                    )
+                elif isinstance(expr[0], ast.Pow):
+                    self.pos_all_possible[expr[1]] = is_pow(
+                        self.pos_all_possible[expr[1]],
+                        expr[3].value,
+                        verbose_pos_clue_lengths[pos_verbose_pos_mapping[expr[1]]],
+                        False,
+                    )
+            elif (
+                isinstance(expr[2], ast.Constant)
+                and isinstance(expr[3], ast.Name)
+                and expr[3].id in self.all_id_access_dsum_count
+            ):
+                if isinstance(expr[0], ast.Mult):
+                    self.pos_all_possible[expr[1]] = is_multiple(
+                        self.pos_all_possible[expr[1]], expr[2].value
+                    )
+                elif isinstance(expr[0], (ast.FloorDiv, ast.Div)):
+                    self.pos_all_possible[expr[1]] = is_factor(
+                        self.pos_all_possible[expr[1]],
+                        expr[2].value,
+                    )
+                elif isinstance(expr[0], ast.Pow):
+                    self.pos_all_possible[expr[1]] = is_pow(
+                        self.pos_all_possible[expr[1]],
+                        expr[2].value,
+                        verbose_pos_clue_lengths[pos_verbose_pos_mapping[expr[1]]],
+                        True,
+                    )
+            # else:
+            #     print(expr)
+
+        # 2D array of sets for all possibile digits per position
+        all_possible_digits = [
+            [[] for _ in range(self.dim[1])] for _ in range(self.dim[0])
         ]
-        for clue_pos in self.all_pos:
-            clue_length = self.clue_lengths[clue_pos][0]
-            horizontal = clue_pos[2]
-            for x in range(clue_length):
-                possible_digits = set()
-                for child in self.all_possible[clue_pos]:
-                    possible_digits.add(int(str(child)[x]))
-                if horizontal:
-                    self.possible_digits[clue_pos[0]][clue_pos[1] + x].append(
-                        possible_digits
-                    )
-                else:
-                    self.possible_digits[clue_pos[0] + x][clue_pos[1]].append(
-                        possible_digits
-                    )
 
+        for verbose_pos, length in verbose_pos_clue_lengths.items():
+            pos = self.verbose_pos_pos_mapping[verbose_pos]
+            for l in range(length):
+                possible_digits = set()
+                for possible_value in self.pos_all_possible[pos]:
+                    possible_digits.add(int(str(possible_value)[l]))
+                if pos[2]:
+                    all_possible_digits[pos[0]][pos[1] + l].append(possible_digits)
+                else:
+                    all_possible_digits[pos[0] + l][pos[1]].append(possible_digits)
         for row in range(self.dim[0]):
             for col in range(self.dim[1]):
-                if len(self.possible_digits[row][col]) != 0:
-                    self.possible_digits[row][col] = list(
-                        set.intersection(*self.possible_digits[row][col])
+                if len(all_possible_digits[row][col]) != 0:
+                    all_possible_digits[row][col] = list(
+                        set.intersection(*all_possible_digits[row][col])
                     )
 
-        for clue_pos in self.all_pos:
-            clue_length = self.clue_lengths[clue_pos][0]
-            horizontal = clue_pos[2]
-            for possible_val in self.all_possible[clue_pos]:
+        for verbose_pos, length in verbose_pos_clue_lengths.items():
+            pos = self.verbose_pos_pos_mapping[verbose_pos]
+            to_remove = []
+            for possible_value in self.pos_all_possible[pos]:
                 valid = True
-                for x in range(clue_length):
-                    if horizontal:
+                if pos[2]:
+                    for l in range(length):
                         if (
-                            int(str(possible_val)[x])
-                            not in self.possible_digits[clue_pos[0]][clue_pos[1] + x]
+                            int(str(possible_value)[l])
+                            not in all_possible_digits[pos[0]][pos[1] + l]
                         ):
                             valid = False
-                    else:
+                            break
+                else:
+                    for l in range(length):
                         if (
-                            int(str(possible_val)[x])
-                            not in self.possible_digits[clue_pos[0] + x][clue_pos[1]]
+                            int(str(possible_value)[l])
+                            not in all_possible_digits[pos[0] + l][pos[1]]
                         ):
                             valid = False
+                            break
 
                 if not valid:
-                    self.all_possible[clue_pos].remove(possible_val)
+                    to_remove.append(possible_value)
 
-        for t2_pos in self.t2_pos:
-            print(t2_pos)
-            possible_results = set()
+            for value in to_remove:
+                self.pos_all_possible[pos].remove(value)
+        self.all_pos = sorted(self.t1_pos) + self.t2_pos
 
-            in_description_dsum = []
-            in_description_access = []
-            in_description_count = []
-            tmp = self.t2_description[t2_pos][1]
-            for pos in self.clue_pos_all:
-                if tmp.find("d" + pos) != -1:
-                    in_description_dsum.append("d" + pos)
-                    tmp = (
-                        tmp[: tmp.find("d" + pos)]
-                        + "_"
-                        + tmp[tmp.find("d" + pos) + 4 :]
-                    )
-                    self.t2_description[t2_pos][1] = self.t2_description[t2_pos][
-                        1
-                    ].replace("d" + pos, "_|_")
+        self.all_possible_count = {
+            x: len(self.pos_all_possible[x]) for x in self.all_pos
+        }
 
-                if tmp.find(pos) != -1:
-                    in_description_access.append("a" + pos)
-                    self.t2_description[t2_pos][1] = self.t2_description[t2_pos][
-                        1
-                    ].replace(pos, "a" + pos)
-                self.t2_description[t2_pos][1] = self.t2_description[t2_pos][1].replace(
-                    "_|_", "d" + pos
-                )
-            for n in range(10):
-                if tmp.find("n" + str(n)) != -1:
-                    in_description_count.append("n" + str(n))
-            possible_dict = (
-                {
-                    x: self.all_possible[self.clue_pos[x[1:]]]
-                    for x in in_description_access
-                }
-                | {
-                    x: list(
-                        set(
-                            [
-                                sum([int(n) for n in str(y)])
-                                for y in self.all_possible[self.clue_pos[x[1:]]]
-                            ]
-                        )
-                    )
-                    for x in in_description_dsum
-                }
-                | {
-                    x: list(range(grid_outline.count("1")))
-                    for x in in_description_count
-                }
-            )
-            duplicates = []  # access and dsum of same clue
-            for val in list(possible_dict.keys()):
-                if "d" + val[1:] in list(possible_dict.keys()) and "a" + val[
-                    1:
-                ] in list(possible_dict.keys()):
-                    duplicates.append(val)
-            for tup in itertools.product(*list(possible_dict.values())):
-                if len(duplicates) != 0:  # validate integrity between access and dsum
-                    valid = True
-                    tmp = {
-                        list(possible_dict.keys())[x]: tup[x] for x in range(len(tup))
-                    }
-                    for dup in list(set([x[1:] for x in duplicates])):
-                        if tmp["d" + dup] != sum([int(x) for x in str(tmp["a" + dup])]):
-                            valid = False
-                            continue
-                else:
-                    valid = True
-                if valid:
-                    dic = {
-                        list(possible_dict.keys())[x]: tup[x] for x in range(len(tup))
-                    }
-                    possible_results.update(
-                        set(eval(self.t2_description[t2_pos][1], dic))
-                    )
-            self.all_possible[t2_pos] = sorted(
-                list(set(self.all_possible[t2_pos]).intersection(possible_results))
-            )
-            for key in list(possible_dict.keys()):
-                if key[0] != "n":
-                    possible_dict["a" + key[1:]] = self.all_possible[
-                        self.clue_pos[key[1:]]
-                    ]
-            duplicates = []  # access and dsum of same clue
-            possible_dict_others = dict()
-            for val in list(possible_dict.keys()):
-                if "d" + val[1:] in list(possible_dict.keys()) and "a" + val[
-                    1:
-                ] in list(possible_dict.keys()):
-                    duplicates.append(val)
-            for tup in itertools.product(*list(possible_dict.values())):
-                if len(duplicates) != 0:  # validate integrity between access and dsum
-                    valid = True
-                    tmp = {
-                        list(possible_dict.keys())[x]: tup[x] for x in range(len(tup))
-                    }
-                    for dup in list(set([x[1:] for x in duplicates])):
-                        if tmp["d" + dup] != sum([int(x) for x in str(tmp["a" + dup])]):
-                            valid = False
-                            continue
-                else:
-                    valid = True
-                if valid:
-                    dic = {
-                        list(possible_dict.keys())[x]: tup[x] for x in range(len(tup))
-                    }
-
-                    if (
-                        len(
-                            set(eval(self.t2_description[t2_pos][1], dic)).intersection(
-                                list(self.all_possible[t2_pos])
-                            )
-                        )
-                        != 0
-                    ):
-                        for key, val in zip(list(possible_dict.keys()), tup):
-                            if key[0] == "a":
-                                if possible_dict_others.get(key[1:]) == None:
-                                    possible_dict_others[key[1:]] = [val]
-                                else:
-                                    possible_dict_others[key[1:]].append(val)
-            for key, val in possible_dict_others.items():
-                self.all_possible[self.clue_pos[key]] = list(
-                    set(self.all_possible[self.clue_pos[key]]).intersection(set(val))
-                )
-            # print(dic, self.all_possible[t2_pos])
-        # print(self.all_possible.keys())
-        # print("19a", self.all_possible[(5, 1, True)])
-        # print("23a", self.all_possible[(6, 8, True)])
-        # print("15a", self.all_possible[(4, 0, True)])
-
-        self.all_possible_count = {x: len(self.all_possible[x]) for x in self.all_pos}
-        self.reduced_count = math.prod(self.all_possible_count.values())
+        self.count["reduced"] = math.prod(self.all_possible_count.values())
+        self.clue_lengths = {
+            self.verbose_pos_pos_mapping[verbose_pos]: length
+            for verbose_pos, length in verbose_pos_clue_lengths.items()
+        }
+        self.max_position = 0
+        print("init     ", round(math.log10(self.count["init"]), 2))
+        print("reduced  ", round(math.log10(self.count["reduced"]), 2))
 
     def set_value(self, row, col, horizontal, value):
-        if horizontal == True:
+        if horizontal:
             for x in range(len(str(value))):
                 self.values[row][col + x] = int(str(value)[x])
         else:
@@ -502,7 +638,7 @@ class CrossNumber:
         filled_in = []
         filled_index = []
         str_value = str(value)
-        number_length = self.clue_lengths[(row, col, horizontal)][0]
+        number_length = self.clue_lengths[(row, col, horizontal)]
         if horizontal == True:
             for x in range(number_length):
                 filled_in.append(self.values[row][col + x])
@@ -523,41 +659,39 @@ class CrossNumber:
         for s in range(position):
             self.set_value(
                 *self.all_pos[s],
-                self.all_possible[self.all_pos[s]][solution[s]],
+                self.pos_all_possible[self.all_pos[s]][solution[s]],
             )
             if not self.is_possible(
                 *self.all_pos[s + 1],
-                self.all_possible[self.all_pos[s + 1]][solution[s + 1]],
+                self.pos_all_possible[self.all_pos[s + 1]][solution[s + 1]],
             ):
                 return False
         self.set_value(
             *self.all_pos[position],
-            self.all_possible[self.all_pos[position]][solution[position]],
+            self.pos_all_possible[self.all_pos[position]][solution[position]],
         )
-        if position == len(self.clue_lengths.keys()) - 1:
+        if position == len(self.pos_all_possible.keys()) - 1:
             for count in list(self.t2_count_used.keys()):
                 self.t2_count_used[count] = sum(
                     [x.count(int(count[1])) for x in self.values]
                 )
-            for pos in list(self.t2_access_used.keys()):
-                self.t2_access_used[pos] = self.get_value(
-                    *self.clue_pos[pos],
-                    self.clue_lengths[self.clue_pos[pos]][0],
+            for verbose_pos in list(self.t2_access_used.keys()):
+                self.t2_access_used[verbose_pos] = self.get_value(
+                    *self.verbose_pos_pos_mapping[verbose_pos],
+                    self.clue_lengths[self.verbose_pos_pos_mapping[verbose_pos]],
                 )
-                self.t2_dsum_used["d" + pos] = sum(
-                    [
-                        int(x)
-                        for x in str(
-                            self.get_value(
-                                *self.clue_pos[pos],
-                                self.clue_lengths[self.clue_pos[pos]][0],
-                            )
-                        )
-                    ]
+            for d_verbose_pos in list(self.t2_dsum_used.keys()):
+                self.t2_dsum_used[d_verbose_pos] = dsum(
+                    self.get_value(
+                        *self.verbose_pos_pos_mapping[d_verbose_pos[1:]],
+                        self.clue_lengths[
+                            self.verbose_pos_pos_mapping[d_verbose_pos[1:]]
+                        ],
+                    )
                 )
             for pos in self.t2_pos:
-                if self.get_value(*pos, self.clue_lengths[pos][0]) not in eval(
-                    self.t2_description[pos][1],
+                if self.get_value(*pos, self.clue_lengths[pos]) not in eval(
+                    self.t2_description[pos],
                     self.t2_count_used | self.t2_access_used | self.t2_dsum_used,
                 ):
                     return False
@@ -573,27 +707,19 @@ class CrossNumber:
                 if self.safe_up_to(solution, position):
                     if position > self.max_position:
                         print(
-                            f"{position}/{number_all}",
+                            position,
                             round(time.time() - self.start, 2),
-                            round(
-                                (
-                                    sum(
-                                        [
-                                            solution[x]
-                                            * math.prod(
-                                                list(self.all_possible_count.values())[
-                                                    x + 1 :
-                                                ]
-                                            )
-                                            for x in range(number_all)
-                                            if solution[x] != None
-                                        ]
+                            sum(
+                                [
+                                    (solution[n] + 1)
+                                    * math.prod(
+                                        list(self.all_possible_count.values())[n + 2 :]
                                     )
-                                    + 1
-                                )
-                                / self.reduced_count,
-                                4,
-                            ),
+                                    for n in range(number_all)
+                                    if solution[n] is not None
+                                ]
+                            )
+                            / math.prod(list(self.all_possible_count.values())),
                         )
                         self.max_position = position
                     if position >= number_all - 1:
@@ -612,14 +738,15 @@ class CrossNumber:
                     solution[position] += 1
             return None
 
-        self.max_position = 0
+        # self.value1 = 0
+        self.start = time.time()
         solution[0] = 0
         solution = backtrace_from(0)
         self.clear()
         for x in range(len(solution)):
             self.set_value(
                 *self.all_pos[x],
-                self.all_possible[self.all_pos[x]][solution[x]],
+                self.pos_all_possible[self.all_pos[x]][solution[x]],
             )
         self.display()
         n0 = sum([x.count(0) for x in self.values])
@@ -632,20 +759,45 @@ class CrossNumber:
         n7 = sum([x.count(7) for x in self.values])
         n8 = sum([x.count(8) for x in self.values])
         n9 = sum([x.count(9) for x in self.values])
-        print("init     ", math.log10(self.reduced_count))
-        print("reduced  ", math.log10(self.init_count))
-        print("factor of", self.init_count / self.reduced_count)
-        print("time     ", time.time() - self.start, "seconds")
-
+        print("init     ", round(math.log10(self.count["init"]), 2))
+        print("reduced  ", round(math.log10(self.count["reduced"]), 2))
+        print(
+            "factor of",
+            round(
+                (self.count["init"] / self.count["reduced"])
+                / 10
+                ** math.floor(math.log10(self.count["init"] / self.count["reduced"])),
+                2,
+            )
+            * 10 ** math.floor(math.log10(self.count["init"] / self.count["reduced"])),
+        )
+        print("time     ", round(time.time() - self.start, 2), "seconds")
+        print(
+            "searched ",
+            round(
+                sum(
+                    [
+                        (solution[n] + 1)
+                        * math.prod(list(self.all_possible_count.values())[n + 2 :])
+                        for n in range(number_all)
+                        if solution[n] is not None
+                    ]
+                )
+                / math.prod(list(self.all_possible_count.values())),
+                3,
+            )
+            * 100,
+            "percent",
+        )
         print(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9)
 
     def display(self):
-        for row in range(len(self.values)):
+        for row in range(self.dim[0]):
             val = []
-            for x in range(len(self.values[row])):
-                if self.values[row][x] != None:
-                    val.append(" " + str(self.values[row][x]) + " ")
-                elif self.grid_outline[row][x] == 1:
+            for col in range(self.dim[1]):
+                if self.values[row][col] != None:
+                    val.append(" " + str(self.values[row][col]) + " ")
+                elif self.board_layout[row][col] != -1:
                     val.append("   ")
                 else:
                     val.append("\u2588\u2588\u2588")

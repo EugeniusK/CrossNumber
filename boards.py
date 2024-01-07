@@ -1,195 +1,237 @@
 from solver import CrossNumber
 
 board_ryder = CrossNumber(
-    "ryder",
-    """111x1111x1
-    1x1111x111
-    111xx111x1
-    1x1111x111
-    11x1xx1x11
-    x111x1111x
-    11x111xx11
-    1x11x1x111
-    111x1111x1
-    1x1111x1x1""",
-    """1xxx3xxxxx
-    xx7xxxx8xx
-    9xxxx10xxxx
-    xx11xxxx13xx
-    15xxxxxxx18x
-    x19xxx20xxxx
-    21xx22xxxx23x
-    xx25xxxx26xx
-    27xxx28xxxxx
-    xx29xxxxxxx
-    """,
-    """1x2x3.4x5x6
-    xxxxxxxxxx
-    xxxxxxxxxx
-    xxx12xxxx14x
-    x16xxxx17xxx
-    xxxxx20xxxx
-    21xxxxxxxx24
-    xx25xxxx26xx
-    xxxx28xxxxx
-    xxxxxxxxxx""",
-    """1. square
-    3. integer multiple 1102
-    7. integer sum 9
-    8. square
-    9. square
-    10. square
-    11. integer sum 18
-    13. cube
-    15. prime
-    18. prime
-    19. integer [x for x in range(100,1000) if int(str(x)[1]) == 19-n9]
-    20. factorial_diff
-    21. integer sum 13
-    22. cube
-    23. integer [d15a]
-    25. product_distinct_prime
-    26. square
-    27. square
-    28. cube
-    29. 4th_power""",
-    """1. palindrome sum 18
-    2. power_2_backwards
-    3. product_distinct_prime
-    4. power_2
-    5. cube
-    6. integer multiple 11111
-    12. integer multiple 11111
-    14. palindrome sum [11, 45]
-    16. cube
-    17. integer multiple 7
-    20. permutation_12345_monotonic_seq_four
-    21. integer multiple 2020
-    24. 5th_power
-    25. cube
-    26. palindrome sum 7
-    28. integer multiple 3""",
+    {
+        "name": "ryder",
+        "dimensions": {"height": 10, "width": 10},
+        "board layout": [
+            [1, 0, 2, -1, 3, 4, 0, 5, -1, 6],
+            [0, -1, 7, 0, 0, 0, -1, 8, 0, 0],
+            [9, 0, 0, -1, -1, 10, 0, 0, -1, 0],
+            [0, -1, 11, 12, 0, 0, -1, 13, 14, 0],
+            [15, 16, -1, 0, -1, -1, 17, -1, 18, 0],
+            [-1, 19, 0, 0, -1, 20, 0, 0, 0, -1],
+            [21, 0, -1, 22, 0, 0, -1, -1, 23, 24],
+            [0, -1, 25, 0, -1, 0, -1, 26, 0, 0],
+            [27, 0, 0, -1, 28, 0, 0, 0, -1, 0],
+            [0, -1, 29, 0, 0, 0, -1, 0, -1, 0],
+        ],
+        "across clues": {
+            "1a": {"type": "square"},
+            "3a": {"type": "integer", "multiple": "1102"},
+            "7a": {"type": "integer", "dsum": "9"},
+            "8a": {"type": "square"},
+            "9a": {"type": "square"},
+            "10a": {"type": "square"},
+            "11a": {"type": "integer", "dsum": "18"},
+            "13a": {"type": "cube"},
+            "15a": {"type": "prime"},
+            "18a": {"type": "prime"},
+            "19a": {
+                "type": "integer",
+                "eval": {
+                    "expr": "[x for x in range(100,1000) if int(str(x)[1]) == 19-n9]"
+                },
+            },
+            "20a": {"type": "factorial_diff"},
+            "21a": {"type": "integer", "dsum": "13"},
+            "22a": {"type": "cube"},
+            "23a": {"type": "integer", "eval": {"expr": "d15a"}},
+            "25a": {"type": "product_distinct_prime"},
+            "26a": {"type": "square"},
+            "27a": {"type": "square"},
+            "28a": {"type": "cube"},
+            "29a": {"type": "4th_power"},
+        },
+        "down clues": {
+            "1d": {"type": "palindrome", "dsum": "18"},
+            "2d": {"type": "power_2_backwards"},
+            "3d": {"type": "product_distinct_prime"},
+            "4d": {"type": "power_2"},
+            "5d": {"type": "cube"},
+            "6d": {"type": "integer", "multiple": "11111"},
+            "12d": {"type": "integer", "multiple": "11111"},
+            "14d": {"type": "palindrome", "dsum": "[10, None]"},
+            "16d": {"type": "cube"},
+            "17d": {"type": "integer", "multiple": "7"},
+            "20d": {"type": "permutation_12345_monotonic_seq_four"},
+            "21d": {"type": "integer", "multiple": "2020"},
+            "24d": {"type": "5th_power"},
+            "25d": {"type": "cube"},
+            "26d": {"type": "palindrome", "dsum": "7"},
+            "28d": {"type": "integer", "multiple": "3"},
+        },
+    }
 )
-
 board_yuichiro = CrossNumber(
-    "yuichiro",
-    """11111x1x111x
-        1x11x1111x11
-        11x1111x111x
-        x111xx111x1x
-        11x1111x1111
-        111x1xx1x1x1
-        1x111x111111
-        111x111xx1x1
-        x1x11x1x1111
-        1111x1111x1x
-        x1x111xx1111
-        1111x11111x1""",
-    """1xxxxxxx5xxx
-        xx7xx8xxxx9x
-        10xx12xxxx13xxx
-        x14xxxx15xxxxx
-        16xx17xxxx19xxx
-        22xxxxxxxxxxx
-        xx25xxx26xxxxx
-        27xxx29xxxxxxx
-        xxx30xxxx31xxx
-        33xxxx34xxxxxx
-        xxx35xxxx36xxx
-        39xxxx40xxxxxx""",
-    """1x2.3xx4x5x6x
-        xxxxx8xxxxxx
-        x11xxxxxxxxxx
-        xxxxxxxxxxxx
-        16xxx18xxxx20x21
-        xx23xxxx24xxxx
-        xxxxxx26xxxxx
-        x28xxxxxxxxxx
-        xxx30xxxx31x32x
-        xxxxx34xxxxxx
-        xxxxxxxxx37x38
-        xxxxxxxxxxxx""",
-    """1. pronic
-        5. trimorphic
-        7. decagonal
-        8. pentagonal
-        9. triangle
-        10. padovan
-        12. vampire
-        13. lucas
-        14. untouchable
-        15. hexagonal
-        16. trimorphic
-        17. pentagonal
-        19. pronic
-        22. pronic
-        25. super3
-        26. kaprekar
-        27. padovan
-        29. sophiegermain
-        30. sophiegermain
-        31. perrin
-        33. lucas
-        34. octahedral
-        35. hexagonal
-        36. hexagonal
-        39. icosahedral
-        40. icosahedral""",
-    """1. super3
-        2. tribonacci
-        3. keith
-        4. icosahedral
-        5. hexagonal
-        6. pentagonal
-        8. integer [int(((n7-2)*n**2-(n7-4)*n)/2) for n in range(100)]
-        11. octahedral [int((n1-1)*(2*(n1-1)**2 + 1)/3)]
-        16. super4
-        18. A053873
-        20. strobogrammatic
-        21. pentagonal
-        23. trimorphic
-        24. triangle [int(n0*(n0+1)/2)]
-        26. tetradic
-        28. pentagonal
-        30. octahedral
-        31. quartan
-        32. perrin
-        34. pentagonal
-        37. emirp
-        38. tetrahedral""",
+    {
+        "name": "yuichiro",
+        "dimensions": {"height": 12, "width": 12},
+        "board layout": [
+            [1, 0, 2, 3, 0, -1, 4, -1, 5, 0, 6, -1],
+            [0, -1, 7, 0, -1, 8, 0, 0, 0, -1, 9, 0],
+            [10, 11, -1, 12, 0, 0, 0, -1, 13, 0, 0, -1],
+            [-1, 14, 0, 0, -1, -1, 15, 0, 0, -1, 0, -1],
+            [16, 0, -1, 17, 18, 0, 0, -1, 19, 20, 0, 21],
+            [22, 0, 23, -1, 0, -1, -1, 24, -1, 0, -1, 0],
+            [0, -1, 25, 0, 0, -1, 26, 0, 0, 0, 0, 0],
+            [27, 28, 0, -1, 29, 0, 0, -1, -1, 0, -1, 0],
+            [-1, 0, -1, 30, 0, -1, 0, -1, 31, 0, 32, 0],
+            [33, 0, 0, 0, -1, 34, 0, 0, 0, -1, 0, -1],
+            [-1, 0, -1, 35, 0, 0, -1, -1, 36, 37, 0, 38],
+            [39, 0, 0, 0, -1, 40, 0, 0, 0, 0, -1, 0],
+        ],
+        "across clues": {
+            "1a": {"type": "pronic"},
+            "5a": {"type": "trimorphic"},
+            "7a": {"type": "decagonal"},
+            "8a": {"type": "pentagonal"},
+            "9a": {"type": "triangle"},
+            "10a": {"type": "padovan"},
+            "12a": {"type": "vampire"},
+            "13a": {"type": "lucas"},
+            "14a": {"type": "untouchable"},
+            "15a": {"type": "hexagonal"},
+            "16a": {"type": "trimorphic"},
+            "17a": {"type": "pentagonal"},
+            "19a": {"type": "pronic"},
+            "22a": {"type": "pronic"},
+            "25a": {"type": "super3"},
+            "26a": {"type": "kaprekar"},
+            "27a": {"type": "padovan"},
+            "29a": {"type": "sophiegermain"},
+            "30a": {"type": "sophiegermain"},
+            "31a": {"type": "perrin"},
+            "33a": {"type": "lucas"},
+            "34a": {"type": "octahedral"},
+            "35a": {"type": "hexagonal"},
+            "36a": {"type": "hexagonal"},
+            "39a": {"type": "icosahedral"},
+            "40a": {"type": "icosahedral"},
+        },
+        "down clues": {
+            "1d": {"type": "super3"},
+            "2d": {"type": "tribonacci", "args": [9, 12, -10]},
+            "3d": {"type": "keith"},
+            "4d": {"type": "icosahedral"},
+            "5d": {"type": "hexagonal"},
+            "6d": {"type": "pentagonal"},
+            "8d": {
+                "type": "integer",
+                "eval": {"expr": "[int(((n7-2)*n**2-(n7-4)*n)/2) for n in range(100)]"},
+            },
+            "11d": {
+                "type": "octahedral",
+                "eval": {"expr": "int((n1-1)*(2*(n1-1)**2 + 1)/3)"},
+            },
+            "16d": {"type": "super4"},
+            "18d": {"type": "A053873"},
+            "20d": {"type": "strobogrammatic"},
+            "21d": {"type": "pentagonal"},
+            "23d": {"type": "trimorphic"},
+            "24d": {"type": "triangle", "eval": {"expr": "int(n0*(n0+1)/2)"}},
+            "26d": {"type": "tetradic"},
+            "28d": {"type": "pentagonal"},
+            "30d": {"type": "octahedral"},
+            "31d": {"type": "quartan"},
+            "32d": {"type": "perrin"},
+            "34d": {"type": "pentagonal"},
+            "37d": {"type": "emirp"},
+            "38d": {"type": "tetrahedral"},
+        },
+    },
 )
 
-
-# board_liersch_patki = CrossNumber(
-#     "liersch_patki",
-#     """111x1111x1
-#     1x1111x111
-#     111xx111x1
-#     1x1111x111
-#     11x1xx1x11
-#     x111x1111x
-#     11x111xx11
-#     1x11x1x111
-#     111x1111x1
-#     1x1111x1x1""",
-#     """1xxx3xxxxx
-#     xx7xxxx8xx
-#     9xxxx10xxxx
-#     xx11xxxx13xx
-#     15xxxxxxx18x
-#     x19xxx20xxxx
-#     21xx22xxxx23x
-#     xx25xxxx26xx
-#     27xxx28xxxxx
-#     xx29xxxxxxx""",
-#     """1x2x3.4x5x6
-#     xxxxxxxxxx
-#     xxxxxxxxxx
-#     xxx12xxxx14x
-#     x16xxxx17xxx
-#     xxxxx20xxxx
-#     21xxxxxxxx24
-#     xx25xxxx26xx
-#     xxxx28xxxxx
-#     xxxxxxxxxx""",
-# )
+board_liersch_patki = CrossNumber(
+    {
+        "name": "liersch_patki",
+        "dimensions": {"height": 10, "width": 10},
+        "board layout": [
+            [1, 0, 2, -1, 3, 4, 0, 5, -1, 6],
+            [0, -1, 7, 0, 0, 0, -1, 8, 0, 0],
+            [9, 0, 0, -1, -1, 10, 0, 0, -1, 0],
+            [0, -1, 11, 12, 0, 0, -1, 13, 14, 0],
+            [15, 16, -1, 0, -1, -1, 17, -1, 18, 0],
+            [-1, 19, 0, 0, -1, 20, 0, 0, 0, -1],
+            [21, 0, -1, 22, 0, 0, -1, -1, 23, 24],
+            [0, -1, 25, 0, -1, 0, -1, 26, 0, 0],
+            [27, 0, 0, -1, 28, 0, 0, 0, -1, 0],
+            [0, -1, 29, 0, 0, 0, -1, 0, -1, 0],
+        ],
+        "across clues": {
+            "1a": {"type": "integer", "eval": {"dsum": "d1d"}},
+            "3a": {"type": "integer", "multiple": "11", "eval": {"expr": "10a * 11"}},
+            "7a": {
+                "type": "integer",
+                "eval": {"multiple": "d13a"},
+            },
+            "8a": {"type": "square", "eval": {"expr": "15a ** 2"}},
+            "9a": {"type": "square", "eval": {"expr": "17d ** 2"}},
+            "10a": {"type": "cube", "eval": {"expr": "d17d ** 3"}},
+            "11a": {"type": "integer", "eval": {"dsum": "12d"}},
+            "13a": {"type": "integer", "eval": {"expr": "15a * d6d"}},
+            "15a": {"type": "integer", "eval": {"expr": "d26a"}},
+            "18a": {"type": "integer", "eval": {"expr": "17d + d10a"}},
+            "19a": {"type": "integer", "eval": {"dsum": "27a"}},
+            "20a": {
+                "type": "integer",
+                "multiple": "233",
+                "eval": {"expr": "23a * 233"},
+            },
+            "21a": {"type": "integer", "eval": {"expr": "21d // math.isqrt(1d)"}},
+            "22a": {
+                "type": "square",
+                "eval": {"expr": "(dsum(20d - 1) // 2) ** 2"},
+            },
+            "23a": {"type": "integer", "eval": {"expr": "d14d"}},
+            "25a": {
+                "type": "integer",
+                "eval": {
+                    "expr": "(int(str(22a)[2])) ** 2 - (int(str(22a)[0])) ** 2 - (int(str(22a)[1])) ** 2"
+                },
+            },
+            "26a": {"type": "square", "eval": {"expr": "21a ** 2"}},
+            "27a": {"type": "integer", "eval": {"expr": "11a // 4"}},
+            "28a": {"type": "integer", "eval": {"expr": "28d ** 2 * 17d"}},
+            "29a": {"type": "integer", "eval": {"expr": "2d // 3"}},
+        },
+        "down clues": {
+            "1d": {"type": "square", "eval": {"expr": "(7a // 63) ** 2"}},
+            "2d": {
+                "type": "integer",
+                "eval": {"expr": "sum([int(x) ** 4 for x in str(26d)])"},
+            },
+            "3d": {"type": "integer", "eval": {"expr": "840 - 19a"}},
+            "4d": {"type": "integer", "eval": {"expr": "8a * d8a"}},
+            "5d": {"type": "integer", "multiple": "29", "eval": {"expr": "10a * 29"}},
+            "6d": {"type": "integer", "eval": {"expr": "int(str(3a * d5d)[::-1])"}},
+            "12d": {
+                "type": "integer",
+                "multiple": "43",
+                "eval": {"expr": "25a ** 2 * 43"},
+            },
+            "14d": {"type": "integer", "eval": {"expr": "20d + 7a - 38"}},
+            "16d": {
+                "type": "integer",
+                "eval": {
+                    "expr": "[int(''.join(x)) for x in itertools.permutations(d24 * math.isqrt(24d))]"
+                },
+            },
+            "17d": {"type": "integer", "eval": {"expr": "sum(prime_factors(4d))"}},
+            "20d": {
+                "type": "integer",
+                "eval": {
+                    "expr": "1 - 2d * 7 + 10 * (math.isqrt(24d) - math.isqrt(25d))"
+                },
+            },
+            "21d": {"type": "integer", "eval": {"expr": "21a * isqrt(1d)"}},
+            "24d": {"type": "integer", "eval": {"expr": "d20a * 23a ** 2"}},
+            "25d": {"type": "integer", "eval": {"expr": "28a // 15"}},
+            "26d": {
+                "type": "integer",
+                "eval": {"expr": "int(str(sum([x ** 3 for x in str(16d)]))[::-1])"},
+            },
+            "28d": {"type": "integer", "eval": {"dsum": "d29a"}},
+        },
+    }
+)
