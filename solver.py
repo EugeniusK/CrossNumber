@@ -6,6 +6,7 @@ from typing import Any
 from functions import *
 import itertools
 import ast
+import multiprocessing
 
 
 def isqrt(n):
@@ -694,10 +695,15 @@ class CrossNumber:
                     return False
         return True
 
-    def backtrace(self):
+    def backtrace(self, current_solution=None, limited=False):
         number_all = len(self.all_pos)
-
-        solution = [None] * number_all
+        if current_solution is None:
+            solution = [None for _ in range(number_all)]
+            solution[0] = 0
+            pos = 0
+        else:
+            solution = current_solution
+            pos = solution.index(None) - 1
 
         def backtrace_from(position):
             while True:
@@ -736,67 +742,45 @@ class CrossNumber:
             return None
 
         self.start = time.time()
-        solution = [
-            0,
-            0,
-            2,
-            0,
-            1,
-            4,
-            2,
-            4,
-            1,
-            29,
-            4,
-            0,
-            3,
-            2,
-            13,
-            4,
-            2,
-            1,
-            3,
-            1,
-            7,
-            31,
-            4,
-            3,
-            2,
-            0,
-            0,
-            1,
-            2,
-            19,
-            0,
-            3,
-            1,
-            3,
-            2,
-            1,
-            1,
-            3,
-            3,
-            2,
-            3,
-            3,
-            0,
-            2,
-            0,
-            33,
-            2,
-            8,
-        ]
-        for i in range(25, len(solution)):
-            solution[i] = None
-        print(solution)
-        solution = backtrace_from(24)
+        solution = backtrace_from(pos)
         self.clear()
-        for idx, val in enumerate(solution):
-            self.set_value(
-                *self.all_pos[idx],
-                self.pos_all_possible[self.all_pos[idx]][val],
-            )
-        self.display()
+        return solution
+
+    def solve(self, threaded=False, solution=None):
+        if not threaded:
+            solution = self.backtrace()
+            self.clear()
+            for idx, val in enumerate(solution):
+                self.set_value(
+                    *self.all_pos[idx],
+                    self.pos_all_possible[self.all_pos[idx]][val],
+                )
+            self.display(solution)
+
+            raise IndexError
+        else:
+            pool = multiprocessing.Pool()
+
+            raise IndexError
+
+    def display(self, solution=None):
+        """
+        Outputs a graphical view of the board to STDIO
+        """
+        if solution is None:
+            solution = [0] * len(self.all_pos)
+        for row in range(self.dim[0]):
+            val = []
+            for col in range(self.dim[1]):
+                if self.values[row][col] is not None:
+                    val.append(" " + str(self.values[row][col]) + " ")
+                elif self.board_layout[row][col] != -1:
+                    val.append("   ")
+                else:
+                    val.append("\u2588\u2588\u2588")
+            print("\u2503".join(val))
+            if row != self.dim[0] - 1:
+                print("\u254B".join(["\u2501\u2501\u2501" for _ in range(self.dim[1])]))
         n0 = sum([x.count(0) for x in self.values])
         n1 = sum([x.count(1) for x in self.values])
         n2 = sum([x.count(2) for x in self.values])
@@ -827,7 +811,7 @@ class CrossNumber:
                     [
                         (solution[n] + 1)
                         * math.prod(list(self.all_possible_count.values())[n + 2 :])
-                        for n in range(number_all)
+                        for n in range(len(self.all_pos))
                         if solution[n] is not None
                     ]
                 )
@@ -839,24 +823,6 @@ class CrossNumber:
         )
         print(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9)
         print(solution)
-        raise IndexError
-
-    def display(self):
-        """
-        Outputs a graphical view of the board to STDIO
-        """
-        for row in range(self.dim[0]):
-            val = []
-            for col in range(self.dim[1]):
-                if self.values[row][col] is not None:
-                    val.append(" " + str(self.values[row][col]) + " ")
-                elif self.board_layout[row][col] != -1:
-                    val.append("   ")
-                else:
-                    val.append("\u2588\u2588\u2588")
-            print("\u2503".join(val))
-            if row != self.dim[0] - 1:
-                print("\u254B".join(["\u2501\u2501\u2501" for _ in range(self.dim[1])]))
 
 
 if __name__ == "__main__":
