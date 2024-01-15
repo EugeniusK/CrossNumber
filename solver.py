@@ -121,10 +121,10 @@ class CountDivisions(ast.NodeVisitor):
     def __init__(self):
         self.divisions = 0
 
-    def visit_Div(self, node):
+    def visit_Div(self, _):
         self.divisions += 1
 
-    def visit_FloorDiv(self, node):
+    def visit_FloorDiv(self, _):
         self.divisions += 1
 
 
@@ -302,6 +302,7 @@ class CrossNumber:
 
         self.count = dict()
         self.count["init"] = math.prod([len(x) for x in self.pos_all_possible.values()])
+        print("init     ", round(math.log10(self.count["init"]), 2))
 
         # tier 1 - there are fixed possibilities
         # tier 2 - there are varying possibilities based on other factors beyond the number
@@ -323,10 +324,6 @@ class CrossNumber:
         find_operator_operand = FindTopOperatorOperand()
         find_sqrt_argument = FindSqrtArgument()
         find_identifiers = FindIdentifiers()
-
-        # print(self.pos_all_possible[self.verbose_pos_pos_mapping["26d"]])
-
-        # print(verbose_pos_clue_lengths)
         for verbose, clue in (
             input_board["across clues"] | input_board["down clues"]
         ).items():
@@ -446,7 +443,6 @@ class CrossNumber:
                             if dsum(x) == eval(clue["dsum"])
                         ]
                 find_identifiers.clear()
-        # print(self.pos_all_possible[self.verbose_pos_pos_mapping["26d"]])
         # raise IndexError
         self.unfiltered_expr = []
         for pos, expr in self.t2_description.items():
@@ -474,15 +470,12 @@ class CrossNumber:
                         (operands[0], pos, operands[1], operands[2])
                     )
             if sqrt_arguments:
-                # print(pos_verbose_pos_mapping[pos], sqrt_arguments)
                 for argument in sqrt_arguments:
                     find_identifiers.visit(ast.parse(argument))
                     if (
                         len(find_identifiers.identifiers) == 1
                         and find_identifiers.identifiers[0][0] == "a"
                     ):
-                        # print(find_identifiers.identifiers[0])
-
                         pos = self.verbose_pos_pos_mapping[
                             find_identifiers.identifiers[0][1:]
                         ]
@@ -541,10 +534,14 @@ class CrossNumber:
                         verbose_pos_clue_lengths[pos_verbose_pos_mapping[expr[1]]],
                         True,
                     )
-            # else:
-            #     print(expr)
+        self.all_pos = sorted(self.t1_pos) + self.t2_pos
 
-        # 2D array of sets for all possibile digits per position
+        self.all_possible_count = {
+            x: len(self.pos_all_possible[x]) for x in self.all_pos
+        }
+        self.overlap_digits_optimise(verbose_pos_clue_lengths)
+
+    def overlap_digits_optimise(self, verbose_pos_clue_lengths):
         all_possible_digits = [
             [[] for _ in range(self.dim[1])] for _ in range(self.dim[0])
         ]
@@ -559,6 +556,7 @@ class CrossNumber:
                     all_possible_digits[pos[0]][pos[1] + l].append(possible_digits)
                 else:
                     all_possible_digits[pos[0] + l][pos[1]].append(possible_digits)
+
         for row in range(self.dim[0]):
             for col in range(self.dim[1]):
                 if len(all_possible_digits[row][col]) != 0:
@@ -593,19 +591,18 @@ class CrossNumber:
 
             for value in to_remove:
                 self.pos_all_possible[pos].remove(value)
+
         self.all_pos = sorted(self.t1_pos) + self.t2_pos
 
         self.all_possible_count = {
             x: len(self.pos_all_possible[x]) for x in self.all_pos
         }
-
         self.count["reduced"] = math.prod(self.all_possible_count.values())
         self.clue_lengths = {
             self.verbose_pos_pos_mapping[verbose_pos]: length
             for verbose_pos, length in verbose_pos_clue_lengths.items()
         }
         self.max_position = 0
-        print("init     ", round(math.log10(self.count["init"]), 2))
         print("reduced  ", round(math.log10(self.count["reduced"]), 2))
 
     def set_value(self, row, col, horizontal, value):
@@ -738,15 +735,66 @@ class CrossNumber:
                     solution[position] += 1
             return None
 
-        # self.value1 = 0
         self.start = time.time()
-        solution[0] = 0
-        solution = backtrace_from(0)
+        solution = [
+            0,
+            0,
+            2,
+            0,
+            1,
+            4,
+            2,
+            4,
+            1,
+            29,
+            4,
+            0,
+            3,
+            2,
+            13,
+            4,
+            2,
+            1,
+            3,
+            1,
+            7,
+            31,
+            4,
+            3,
+            2,
+            0,
+            0,
+            1,
+            2,
+            19,
+            0,
+            3,
+            1,
+            3,
+            2,
+            1,
+            1,
+            3,
+            3,
+            2,
+            3,
+            3,
+            0,
+            2,
+            0,
+            33,
+            2,
+            8,
+        ]
+        for i in range(25, len(solution)):
+            solution[i] = None
+        print(solution)
+        solution = backtrace_from(24)
         self.clear()
-        for x in range(len(solution)):
+        for idx, val in enumerate(solution):
             self.set_value(
-                *self.all_pos[x],
-                self.pos_all_possible[self.all_pos[x]][solution[x]],
+                *self.all_pos[idx],
+                self.pos_all_possible[self.all_pos[idx]][val],
             )
         self.display()
         n0 = sum([x.count(0) for x in self.values])
@@ -790,12 +838,17 @@ class CrossNumber:
             "percent",
         )
         print(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9)
+        print(solution)
+        raise IndexError
 
     def display(self):
+        """
+        Outputs a graphical view of the board to STDIO
+        """
         for row in range(self.dim[0]):
             val = []
             for col in range(self.dim[1]):
-                if self.values[row][col] != None:
+                if self.values[row][col] is not None:
                     val.append(" " + str(self.values[row][col]) + " ")
                 elif self.board_layout[row][col] != -1:
                     val.append("   ")

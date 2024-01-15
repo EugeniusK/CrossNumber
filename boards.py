@@ -142,96 +142,96 @@ board_yuichiro = CrossNumber(
     },
 )
 
-board_liersch_patki = CrossNumber(
-    {
-        "name": "liersch_patki",
-        "dimensions": {"height": 10, "width": 10},
-        "board layout": [
-            [1, 0, 2, -1, 3, 4, 0, 5, -1, 6],
-            [0, -1, 7, 0, 0, 0, -1, 8, 0, 0],
-            [9, 0, 0, -1, -1, 10, 0, 0, -1, 0],
-            [0, -1, 11, 12, 0, 0, -1, 13, 14, 0],
-            [15, 16, -1, 0, -1, -1, 17, -1, 18, 0],
-            [-1, 19, 0, 0, -1, 20, 0, 0, 0, -1],
-            [21, 0, -1, 22, 0, 0, -1, -1, 23, 24],
-            [0, -1, 25, 0, -1, 0, -1, 26, 0, 0],
-            [27, 0, 0, -1, 28, 0, 0, 0, -1, 0],
-            [0, -1, 29, 0, 0, 0, -1, 0, -1, 0],
-        ],
-        "across clues": {
-            "1a": {"type": "integer", "eval": {"dsum": "d1d"}},
-            "3a": {"type": "integer", "multiple": "11", "eval": {"expr": "10a * 11"}},
-            "7a": {
-                "type": "integer",
-                "eval": {"multiple": "d13a"},
-            },
-            "8a": {"type": "square", "eval": {"expr": "15a ** 2"}},
-            "9a": {"type": "square", "eval": {"expr": "17d ** 2"}},
-            "10a": {"type": "cube", "eval": {"expr": "d17d ** 3"}},
-            "11a": {"type": "integer", "eval": {"dsum": "12d"}},
-            "13a": {"type": "integer", "eval": {"expr": "15a * d6d"}},
-            "15a": {"type": "integer", "eval": {"expr": "d26a"}},
-            "18a": {"type": "integer", "eval": {"expr": "17d + d10a"}},
-            "19a": {"type": "integer", "eval": {"dsum": "27a"}},
-            "20a": {
-                "type": "integer",
-                "multiple": "233",
-                "eval": {"expr": "23a * 233"},
-            },
-            "21a": {"type": "integer", "eval": {"expr": "21d // math.isqrt(1d)"}},
-            "22a": {
-                "type": "square",
-                "eval": {"expr": "(dsum(20d - 1) // 2) ** 2"},
-            },
-            "23a": {"type": "integer", "eval": {"expr": "d14d"}},
-            "25a": {
-                "type": "integer",
-                "eval": {
-                    "expr": "(int(str(22a)[2])) ** 2 - (int(str(22a)[0])) ** 2 - (int(str(22a)[1])) ** 2"
-                },
-            },
-            "26a": {"type": "square", "eval": {"expr": "21a ** 2"}},
-            "27a": {"type": "integer", "eval": {"expr": "11a // 4"}},
-            "28a": {"type": "integer", "eval": {"expr": "28d ** 2 * 17d"}},
-            "29a": {"type": "integer", "eval": {"expr": "2d // 3"}},
-        },
-        "down clues": {
-            "1d": {"type": "square", "eval": {"expr": "(7a // 63) ** 2"}},
-            "2d": {
-                "type": "integer",
-                "eval": {"expr": "sum([int(x) ** 4 for x in str(26d)])"},
-            },
-            "3d": {"type": "integer", "eval": {"expr": "840 - 19a"}},
-            "4d": {"type": "integer", "eval": {"expr": "8a * d8a"}},
-            "5d": {"type": "integer", "multiple": "29", "eval": {"expr": "10a * 29"}},
-            "6d": {"type": "integer", "eval": {"expr": "int(str(3a * d5d)[::-1])"}},
-            "12d": {
-                "type": "integer",
-                "multiple": "43",
-                "eval": {"expr": "25a ** 2 * 43"},
-            },
-            "14d": {"type": "integer", "eval": {"expr": "20d + 7a - 38"}},
-            "16d": {
-                "type": "integer",
-                "eval": {
-                    "expr": "[int(''.join(x)) for x in itertools.permutations(d24 * math.isqrt(24d))]"
-                },
-            },
-            "17d": {"type": "integer", "eval": {"expr": "sum(prime_factors(4d))"}},
-            "20d": {
-                "type": "integer",
-                "eval": {
-                    "expr": "1 - 2d * 7 + 10 * (math.isqrt(24d) - math.isqrt(25d))"
-                },
-            },
-            "21d": {"type": "integer", "eval": {"expr": "21a * isqrt(1d)"}},
-            "24d": {"type": "integer", "eval": {"expr": "d20a * 23a ** 2"}},
-            "25d": {"type": "integer", "eval": {"expr": "28a // 15"}},
-            "26d": {
-                "type": "integer",
-                "eval": {"expr": "int(str(sum([x ** 3 for x in str(16d)]))[::-1])"},
-            },
-            "28d": {"type": "integer", "eval": {"dsum": "d29a"}},
-        },
-    }
-)
+# board_liersch_patki = CrossNumber(
+#     {
+#         "name": "liersch_patki",
+#         "dimensions": {"height": 10, "width": 10},
+#         "board layout": [
+#             [1, 0, 2, -1, 3, 4, 0, 5, -1, 6],
+#             [0, -1, 7, 0, 0, 0, -1, 8, 0, 0],
+#             [9, 0, 0, -1, -1, 10, 0, 0, -1, 0],
+#             [0, -1, 11, 12, 0, 0, -1, 13, 14, 0],
+#             [15, 16, -1, 0, -1, -1, 17, -1, 18, 0],
+#             [-1, 19, 0, 0, -1, 20, 0, 0, 0, -1],
+#             [21, 0, -1, 22, 0, 0, -1, -1, 23, 24],
+#             [0, -1, 25, 0, -1, 0, -1, 26, 0, 0],
+#             [27, 0, 0, -1, 28, 0, 0, 0, -1, 0],
+#             [0, -1, 29, 0, 0, 0, -1, 0, -1, 0],
+#         ],
+#         "across clues": {
+#             "1a": {"type": "integer", "eval": {"dsum": "d1d"}},
+#             "3a": {"type": "integer", "multiple": "11", "eval": {"expr": "10a * 11"}},
+#             "7a": {
+#                 "type": "integer",
+#                 "eval": {"multiple": "d13a"},
+#             },
+#             "8a": {"type": "square", "eval": {"expr": "15a ** 2"}},
+#             "9a": {"type": "square", "eval": {"expr": "17d ** 2"}},
+#             "10a": {"type": "cube", "eval": {"expr": "d17d ** 3"}},
+#             "11a": {"type": "integer", "eval": {"dsum": "12d"}},
+#             "13a": {"type": "integer", "eval": {"expr": "15a * d6d"}},
+#             "15a": {"type": "integer", "eval": {"expr": "d26a"}},
+#             "18a": {"type": "integer", "eval": {"expr": "17d + d10a"}},
+#             "19a": {"type": "integer", "eval": {"dsum": "27a"}},
+#             "20a": {
+#                 "type": "integer",
+#                 "multiple": "233",
+#                 "eval": {"expr": "23a * 233"},
+#             },
+#             "21a": {"type": "integer", "eval": {"expr": "21d // math.isqrt(1d)"}},
+#             "22a": {
+#                 "type": "square",
+#                 "eval": {"expr": "(dsum(20d - 1) // 2) ** 2"},
+#             },
+#             "23a": {"type": "integer", "eval": {"expr": "d14d"}},
+#             "25a": {
+#                 "type": "integer",
+#                 "eval": {
+#                     "expr": "(int(str(22a)[2])) ** 2 - (int(str(22a)[0])) ** 2 - (int(str(22a)[1])) ** 2"
+#                 },
+#             },
+#             "26a": {"type": "square", "eval": {"expr": "21a ** 2"}},
+#             "27a": {"type": "integer", "eval": {"expr": "11a // 4"}},
+#             "28a": {"type": "integer", "eval": {"expr": "28d ** 2 * 17d"}},
+#             "29a": {"type": "integer", "eval": {"expr": "2d // 3"}},
+#         },
+#         "down clues": {
+#             "1d": {"type": "square", "eval": {"expr": "(7a // 63) ** 2"}},
+#             "2d": {
+#                 "type": "integer",
+#                 "eval": {"expr": "sum([int(x) ** 4 for x in str(26d)])"},
+#             },
+#             "3d": {"type": "integer", "eval": {"expr": "840 - 19a"}},
+#             "4d": {"type": "integer", "eval": {"expr": "8a * d8a"}},
+#             "5d": {"type": "integer", "multiple": "29", "eval": {"expr": "10a * 29"}},
+#             "6d": {"type": "integer", "eval": {"expr": "int(str(3a * d5d)[::-1])"}},
+#             "12d": {
+#                 "type": "integer",
+#                 "multiple": "43",
+#                 "eval": {"expr": "25a ** 2 * 43"},
+#             },
+#             "14d": {"type": "integer", "eval": {"expr": "20d + 7a - 38"}},
+#             "16d": {
+#                 "type": "integer",
+#                 "eval": {
+#                     "expr": "[int(''.join(x)) for x in itertools.permutations(d24 * math.isqrt(24d))]"
+#                 },
+#             },
+#             "17d": {"type": "integer", "eval": {"expr": "sum(prime_factors(4d))"}},
+#             "20d": {
+#                 "type": "integer",
+#                 "eval": {
+#                     "expr": "1 - 2d * 7 + 10 * (math.isqrt(24d) - math.isqrt(25d))"
+#                 },
+#             },
+#             "21d": {"type": "integer", "eval": {"expr": "21a * isqrt(1d)"}},
+#             "24d": {"type": "integer", "eval": {"expr": "d20a * 23a ** 2"}},
+#             "25d": {"type": "integer", "eval": {"expr": "28a // 15"}},
+#             "26d": {
+#                 "type": "integer",
+#                 "eval": {"expr": "int(str(sum([x ** 3 for x in str(16d)]))[::-1])"},
+#             },
+#             "28d": {"type": "integer", "eval": {"dsum": "d29a"}},
+#         },
+#     }
+# )
