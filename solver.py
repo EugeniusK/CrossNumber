@@ -73,6 +73,27 @@ def is_square(n):
     return math.isqrt(n) ** 2 == n
 
 
+def num_length(n):
+    if 0 <= n < 10:
+        return 1
+    elif 10 <= n < 100:
+        return 2
+    elif 100 <= n < 1000:
+        return 3
+    elif 1000 <= n < 10000:
+        return 4
+    elif 10000 <= n < 100000:
+        return 5
+    elif 100000 <= n < 1000000:
+        return 6
+    elif 1000000 <= n < 10000000:
+        return 7
+    elif 10000000 <= n < 100000000:
+        return 8
+    else:
+        raise NotImplementedError("Beyond implemented size")
+
+
 class FindTopOperatorOperand(ast.NodeVisitor):
     def __init__(self):
         self.operands = ()
@@ -129,9 +150,66 @@ class CountDivisions(ast.NodeVisitor):
         self.divisions += 1
 
 
+class Board:
+    def __init__(self, dim, values, solution_index_pos_mapping):
+        """
+        Assumes validated arguments for all
+        """
+        self.dim = dim
+        self.values = values
+
+        self.solution_index_pos_mapping = solution_index_pos_mapping
+
+    def set_value(self, row, col, horizontal, value):
+        if horizontal:
+            for idx, digit in enumerate(map(int, str(value))):
+                self.values[row][col + idx] = digit
+        else:
+            for idx, digit in enumerate(map(int, str(value))):
+                self.values[row + idx][col] = digit
+
+    def get_value(self, row, col, horizontal, length):
+        if horizontal:
+            return sum(
+                [
+                    self.values[row][col + x] * 10 ** (length - x - 1)
+                    for x in range(length)
+                ]
+            )
+        else:
+            return sum(
+                [
+                    self.values[row + x][col] * 10 ** (length - x - 1)
+                    for x in range(length)
+                ]
+            )
+
+    def clear(self):
+        self.values = [[None for _ in range(self.dim[1])] for _ in range(self.dim[0])]
+
+    def is_possible(self, row, col, horizontal, value):
+        if horizontal:
+            for x, digit in enumerate(map(int, str(value))):
+                if (
+                    self.values[row][col + x] != digit
+                    and self.values[row][col + x] is not None
+                ):
+                    return False
+        else:
+            for x, digit in enumerate(map(int, str(value))):
+                if (
+                    self.values[row + x][col] != digit
+                    and self.values[row + x][col] is not None
+                ):
+                    return False
+        return True
+
+
 class CrossNumber:
     def __init__(self, input_board: dict) -> None:
-        self.start = time.time()
+        self.call_clear = 0
+
+        self.start = time.perf_counter()
         self.name = input_board["name"]
         """Preprocessing of crossnumber
         
@@ -542,6 +620,15 @@ class CrossNumber:
         }
         self.overlap_digits_optimise(verbose_pos_clue_lengths)
 
+        self.board = Board(
+            self.dim,
+            self.values,
+            {
+                x: self.pos_all_possible[self.all_pos[x]]
+                for x in range(len(self.all_pos))
+            },
+        )
+
     def overlap_digits_optimise(self, verbose_pos_clue_lengths):
         all_possible_digits = [
             [[] for _ in range(self.dim[1])] for _ in range(self.dim[0])
@@ -606,81 +693,34 @@ class CrossNumber:
         self.max_position = 0
         print("reduced  ", round(math.log10(self.count["reduced"]), 2))
 
-    def set_value(self, row, col, horizontal, value):
-        if horizontal:
-            for x in range(len(str(value))):
-                self.values[row][col + x] = int(str(value)[x])
-        else:
-            for x in range(len(str(value))):
-                self.values[row + x][col] = int(str(value)[x])
-
-    def get_value(self, row, col, horizontal, length):
-        value = []
-        digits = []
-        if horizontal == True:
-            digits = [self.values[row][col + x] for x in range(length)]
-            if None in digits:
-                return -1
-
-        else:
-            digits = [self.values[row + x][col] for x in range(length)]
-            if None in digits:
-                return -1
-        value = [digits[x] * 10 ** (length - x - 1) for x in range(length)]
-        return sum(value)
-
-    def clear(self):
-        self.values = [[None for _ in range(self.dim[1])] for _ in range(self.dim[0])]
-
-    def is_possible(self, row, col, horizontal, value):
-        filled_in = []
-        filled_index = []
-        str_value = str(value)
-        number_length = self.clue_lengths[(row, col, horizontal)]
-        if horizontal == True:
-            for x in range(number_length):
-                filled_in.append(self.values[row][col + x])
-                if self.values[row][col + x] != None:
-                    filled_index.append(x)
-        else:
-            for x in range(number_length):
-                filled_in.append(self.values[row + x][col])
-                if self.values[row + x][col] != None:
-                    filled_index.append(x)
-
-        return False not in [
-            str_value[idx] == str(filled_in[idx]) for idx in filled_index
-        ]
-
     def safe_up_to(self, solution, position):
-        self.clear()
         for s in range(position):
-            self.set_value(
+            self.board.set_value(
                 *self.all_pos[s],
                 self.pos_all_possible[self.all_pos[s]][solution[s]],
             )
-            if not self.is_possible(
+            if not self.board.is_possible(
                 *self.all_pos[s + 1],
                 self.pos_all_possible[self.all_pos[s + 1]][solution[s + 1]],
             ):
                 return False
-        self.set_value(
+        self.board.set_value(
             *self.all_pos[position],
             self.pos_all_possible[self.all_pos[position]][solution[position]],
         )
         if position == len(self.pos_all_possible.keys()) - 1:
             for count in list(self.t2_count_used.keys()):
                 self.t2_count_used[count] = sum(
-                    [x.count(int(count[1])) for x in self.values]
+                    [x.count(int(count[1])) for x in self.board.values]
                 )
             for verbose_pos in list(self.t2_access_used.keys()):
-                self.t2_access_used[verbose_pos] = self.get_value(
+                self.t2_access_used[verbose_pos] = self.board.get_value(
                     *self.verbose_pos_pos_mapping[verbose_pos],
                     self.clue_lengths[self.verbose_pos_pos_mapping[verbose_pos]],
                 )
             for d_verbose_pos in list(self.t2_dsum_used.keys()):
                 self.t2_dsum_used[d_verbose_pos] = dsum(
-                    self.get_value(
+                    self.board.get_value(
                         *self.verbose_pos_pos_mapping[d_verbose_pos[1:]],
                         self.clue_lengths[
                             self.verbose_pos_pos_mapping[d_verbose_pos[1:]]
@@ -688,7 +728,7 @@ class CrossNumber:
                     )
                 )
             for pos in self.t2_pos:
-                if self.get_value(*pos, self.clue_lengths[pos]) not in eval(
+                if self.board.get_value(*pos, self.clue_lengths[pos]) not in eval(
                     self.t2_description[pos],
                     self.t2_count_used | self.t2_access_used | self.t2_dsum_used,
                 ):
@@ -711,7 +751,7 @@ class CrossNumber:
                     if position > self.max_position:
                         print(
                             position,
-                            round(time.time() - self.start, 2),
+                            round(time.perf_counter() - self.start, 2),
                             sum(
                                 [
                                     (solution[n] + 1)
@@ -725,33 +765,34 @@ class CrossNumber:
                             / math.prod(list(self.all_possible_count.values())),
                         )
                         self.max_position = position
-                    if position >= number_all - 1:
+                    if position == number_all - 1:
                         return solution
                     position += 1
                     solution[position] = 0
                 else:
+                    self.board.clear()
                     while (
                         solution[position]
                         == self.all_possible_count[self.all_pos[position]] - 1
                     ):
                         solution[position] = None
                         position -= 1
-                    if position < 0:
+                    if position < 0 or (limited and position == pos):
                         break
                     solution[position] += 1
             return None
 
-        self.start = time.time()
+        self.start = time.perf_counter()
         solution = backtrace_from(pos)
-        self.clear()
+        self.board.clear()
         return solution
 
     def solve(self, threaded=False, solution=None):
         if not threaded:
-            solution = self.backtrace()
-            self.clear()
+            solution = self.backtrace(solution, limited=True)
+            self.board.clear()
             for idx, val in enumerate(solution):
-                self.set_value(
+                self.board.set_value(
                     *self.all_pos[idx],
                     self.pos_all_possible[self.all_pos[idx]][val],
                 )
@@ -772,8 +813,8 @@ class CrossNumber:
         for row in range(self.dim[0]):
             val = []
             for col in range(self.dim[1]):
-                if self.values[row][col] is not None:
-                    val.append(" " + str(self.values[row][col]) + " ")
+                if self.board.values[row][col] is not None:
+                    val.append(" " + str(self.board.values[row][col]) + " ")
                 elif self.board_layout[row][col] != -1:
                     val.append("   ")
                 else:
@@ -781,16 +822,16 @@ class CrossNumber:
             print("\u2503".join(val))
             if row != self.dim[0] - 1:
                 print("\u254B".join(["\u2501\u2501\u2501" for _ in range(self.dim[1])]))
-        n0 = sum([x.count(0) for x in self.values])
-        n1 = sum([x.count(1) for x in self.values])
-        n2 = sum([x.count(2) for x in self.values])
-        n3 = sum([x.count(3) for x in self.values])
-        n4 = sum([x.count(4) for x in self.values])
-        n5 = sum([x.count(5) for x in self.values])
-        n6 = sum([x.count(6) for x in self.values])
-        n7 = sum([x.count(7) for x in self.values])
-        n8 = sum([x.count(8) for x in self.values])
-        n9 = sum([x.count(9) for x in self.values])
+        n0 = sum([x.count(0) for x in self.board.values])
+        n1 = sum([x.count(1) for x in self.board.values])
+        n2 = sum([x.count(2) for x in self.board.values])
+        n3 = sum([x.count(3) for x in self.board.values])
+        n4 = sum([x.count(4) for x in self.board.values])
+        n5 = sum([x.count(5) for x in self.board.values])
+        n6 = sum([x.count(6) for x in self.board.values])
+        n7 = sum([x.count(7) for x in self.board.values])
+        n8 = sum([x.count(8) for x in self.board.values])
+        n9 = sum([x.count(9) for x in self.board.values])
         print("init     ", round(math.log10(self.count["init"]), 2))
         print("reduced  ", round(math.log10(self.count["reduced"]), 2))
         print(
@@ -803,7 +844,7 @@ class CrossNumber:
             )
             * 10 ** math.floor(math.log10(self.count["init"] / self.count["reduced"])),
         )
-        print("time     ", round(time.time() - self.start, 2), "seconds")
+        print("time     ", round(time.perf_counter() - self.start, 2), "seconds")
         print(
             "searched ",
             round(
