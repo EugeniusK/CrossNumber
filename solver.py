@@ -1,164 +1,35 @@
-from _ast import FloorDiv
 import math
 import json
 import time
-from typing import Any
-from functions import *
+from number import *
 import itertools
 import ast
-import multiprocessing
-
-
-def isqrt(n):
-    return math.isqrt(n)
-
-
-def dsum(n):
-    return sum([int(x) for x in str(n)])
-
-
-def prime_factors(n):
-    arr = []
-    for x in prime_arr:
-        if n % x == 0:
-            arr.append(x)
-        if x > n:
-            break
-    return arr
-
-
-def is_multiple(a, n):
-    """
-    Returns values in arr that are multiples of n
-    Args:
-        "arr" (list or int)
-        "n" (int)
-    """
-    return [x for x in a if x % n == 0]
-
-
-def is_factor(a, n):
-    """
-    Returns values in arr that are factors of n
-    Args:
-        "arr" (list or int)
-        "n" (int)
-    """
-    return [x for x in a if n % x == 0]
-
-
-def is_pow(a, n, length, base):
-    """
-    Base indiciates whether or not n is base or exponent
-
-    n ** 2 vs 2 ** n
-    """
-    arr = []
-    if base:
-        p = 0
-        while n**p < 10**length:
-            if n**p in a:
-                arr.append(n**p)
-            p += 1
-    else:
-        base = 0
-        while base**n < 10**length:
-            if base**n in a:
-                arr.append(base**n)
-            base += 1
-    return arr
-
-
-def is_square(n):
-    return math.isqrt(n) ** 2 == n
-
-
-def num_length(n):
-    if 0 <= n < 10:
-        return 1
-    elif 10 <= n < 100:
-        return 2
-    elif 100 <= n < 1000:
-        return 3
-    elif 1000 <= n < 10000:
-        return 4
-    elif 10000 <= n < 100000:
-        return 5
-    elif 100000 <= n < 1000000:
-        return 6
-    elif 1000000 <= n < 10000000:
-        return 7
-    elif 10000000 <= n < 100000000:
-        return 8
-    else:
-        raise NotImplementedError("Beyond implemented size")
-
-
-class FindTopOperatorOperand(ast.NodeVisitor):
-    def __init__(self):
-        self.operands = ()
-
-    def visit_BinOp(self, node):
-        left = node.left
-        right = node.right
-        if self.operands == ():
-            self.operands = (node.op, left, right)
-
-    def clear(self):
-        self.operands = ()
-
-
-class FindSqrtArgument(ast.NodeVisitor):
-    def __init__(self):
-        self.arguments = []
-
-    def visit_Call(self, node):
-        # if node.func.attr == "isqrt":
-        if isinstance(node.func, ast.Name):  # function with name
-            if node.func.id in ["sqrt", "isqrt"]:
-                # print(ast.dump(node), node.func.id)
-                self.arguments.append(ast.unparse(node.args))
-
-        elif isinstance(node.func, ast.Attribute):
-            if node.func.attr in ["sqrt", "isqrt"]:
-                # print(ast.dump(node), node.func.attr)
-                self.arguments.append(ast.unparse(node.args))
-
-    def clear(self):
-        self.arguments = []
-
-
-class FindIdentifiers(ast.NodeVisitor):
-    def __init__(self):
-        self.identifiers = []
-
-    def visit_Name(self, node):
-        self.identifiers.append(node.id)
-
-    def clear(self):
-        self.identifiers = []
-
-
-class CountDivisions(ast.NodeVisitor):
-    def __init__(self):
-        self.divisions = 0
-
-    def visit_Div(self, _):
-        self.divisions += 1
-
-    def visit_FloorDiv(self, _):
-        self.divisions += 1
+from functions import (
+    FindTopOperatorOperand,
+    FindSqrtArgument,
+    FindIdentifiers,
+    CountDivisions,
+    isqrt,
+    dsum,
+    prime_factors,
+    is_multiple,
+    is_factor,
+    is_pow,
+    is_square,
+    num_length,
+)
+from CrossNumber import RustedBoard
 
 
 class Board:
-    def __init__(self, dim, values, solution_index_pos_mapping):
+    def __init__(self, dim):
         """
         Assumes validated arguments for all
         """
         self.dim = dim
-        self.values = values
+        self.values = [[None for _ in range(self.dim[1])] for _ in range(self.dim[0])]
 
-        self.solution_index_pos_mapping = solution_index_pos_mapping
+        # self.solution_index_pos_mapping = solution_index_pos_mapping
 
     def set_value(self, row, col, horizontal, value):
         if horizontal:
@@ -204,11 +75,25 @@ class Board:
                     return False
         return True
 
+    def safe_up_to_tier_one(self, solution, position, all_pos, pos_all_possible):
+        for s in range(position):
+            self.set_value(
+                *all_pos[s],
+                pos_all_possible[all_pos[s]][solution[s]],
+            )
+            if not self.is_possible(
+                *all_pos[s + 1],
+                pos_all_possible[all_pos[s + 1]][solution[s + 1]],
+            ):
+                return False
+        self.set_value(
+            *all_pos[position],
+            pos_all_possible[all_pos[position]][solution[position]],
+        )
 
-class CrossNumber:
+
+class CrossNumberSolver:
     def __init__(self, input_board: dict) -> None:
-        self.call_clear = 0
-
         self.start = time.perf_counter()
         self.name = input_board["name"]
         """Preprocessing of crossnumber
@@ -620,14 +505,8 @@ class CrossNumber:
         }
         self.overlap_digits_optimise(verbose_pos_clue_lengths)
 
-        self.board = Board(
-            self.dim,
-            self.values,
-            {
-                x: self.pos_all_possible[self.all_pos[x]]
-                for x in range(len(self.all_pos))
-            },
-        )
+        self.board = RustedBoard(*self.dim)
+        # self.board = Board(self.dim)
 
     def overlap_digits_optimise(self, verbose_pos_clue_lengths):
         all_possible_digits = [
@@ -694,39 +573,74 @@ class CrossNumber:
         print("reduced  ", round(math.log10(self.count["reduced"]), 2))
 
     def safe_up_to(self, solution, position):
-        for s in range(position):
-            self.board.set_value(
-                *self.all_pos[s],
-                self.pos_all_possible[self.all_pos[s]][solution[s]],
+        if (
+            self.board.safe_up_to_tier_one(
+                solution, position, self.all_pos, self.pos_all_possible
             )
-            if not self.board.is_possible(
-                *self.all_pos[s + 1],
-                self.pos_all_possible[self.all_pos[s + 1]][solution[s + 1]],
-            ):
-                return False
-        self.board.set_value(
-            *self.all_pos[position],
-            self.pos_all_possible[self.all_pos[position]][solution[position]],
-        )
+            is False
+        ):
+            return False
         if position == len(self.pos_all_possible.keys()) - 1:
-            for count in list(self.t2_count_used.keys()):
-                self.t2_count_used[count] = sum(
-                    [x.count(int(count[1])) for x in self.board.values]
-                )
-            for verbose_pos in list(self.t2_access_used.keys()):
-                self.t2_access_used[verbose_pos] = self.board.get_value(
-                    *self.verbose_pos_pos_mapping[verbose_pos],
-                    self.clue_lengths[self.verbose_pos_pos_mapping[verbose_pos]],
-                )
-            for d_verbose_pos in list(self.t2_dsum_used.keys()):
-                self.t2_dsum_used[d_verbose_pos] = dsum(
-                    self.board.get_value(
-                        *self.verbose_pos_pos_mapping[d_verbose_pos[1:]],
-                        self.clue_lengths[
-                            self.verbose_pos_pos_mapping[d_verbose_pos[1:]]
-                        ],
+            if isinstance(self.board, RustedBoard):
+                self.t2_count_used = {
+                    "n" + str(digit): c
+                    for digit, c in zip(range(10), self.board.get_digit_count())
+                }
+                self.t2_access_used = {
+                    position: value
+                    for position, value in zip(
+                        list(self.t2_access_used.keys()),
+                        self.board.get_value_multiple(
+                            [
+                                self.verbose_pos_pos_mapping[verbose]
+                                + [
+                                    self.clue_lengths[
+                                        self.verbose_pos_pos_mapping[verbose]
+                                    ]
+                                ]
+                                for verbose in list(self.t2_access_used.keys())
+                            ]
+                        ),
                     )
-                )
+                }
+                self.t2_dsum_used = {
+                    position: value
+                    for position, value in zip(
+                        list(self.t2_dsum_used.keys()),
+                        self.board.get_dsum_multiple(
+                            [
+                                tuple(
+                                    [
+                                        *self.verbose_pos_pos_mapping[verbose[1:]],
+                                        self.clue_lengths[
+                                            self.verbose_pos_pos_mapping[verbose[1:]]
+                                        ],
+                                    ]
+                                )
+                                for verbose in list(self.t2_dsum_used.keys())
+                            ]
+                        ),
+                    )
+                }
+            elif isinstance(self.board, Board):
+                for c in list(self.t2_count_used.keys()):
+                    self.t2_count_used[c] = sum(
+                        [x.count(int(c[1])) for x in self.board.values]
+                    )
+                for verbose_pos in list(self.t2_access_used.keys()):
+                    self.t2_access_used[verbose_pos] = self.board.get_value(
+                        *self.verbose_pos_pos_mapping[verbose_pos],
+                        self.clue_lengths[self.verbose_pos_pos_mapping[verbose_pos]],
+                    )
+                for d_verbose_pos in list(self.t2_dsum_used.keys()):
+                    self.t2_dsum_used[d_verbose_pos] = dsum(
+                        self.board.get_value(
+                            *self.verbose_pos_pos_mapping[d_verbose_pos[1:]],
+                            self.clue_lengths[
+                                self.verbose_pos_pos_mapping[d_verbose_pos[1:]]
+                            ],
+                        )
+                    )
             for pos in self.t2_pos:
                 if self.board.get_value(*pos, self.clue_lengths[pos]) not in eval(
                     self.t2_description[pos],
@@ -735,51 +649,44 @@ class CrossNumber:
                     return False
         return True
 
-    def backtrace(self, current_solution=None, limited=False):
+    def backtrace(self, current_solution=None):
         number_all = len(self.all_pos)
         if current_solution is None:
-            solution = [None for _ in range(number_all)]
+            solution = [-1 for _ in range(number_all)]
             solution[0] = 0
             pos = 0
         else:
             solution = current_solution
-            pos = solution.index(None) - 1
+            try:
+                pos = solution.index(-1) - 1
+            except:
+                pos = len(solution) - 1
 
         def backtrace_from(position):
+            c = 0
+
             while True:
+                c += 1
                 if self.safe_up_to(solution, position):
                     if position > self.max_position:
-                        print(
-                            position,
-                            round(time.perf_counter() - self.start, 2),
-                            sum(
-                                [
-                                    (solution[n] + 1)
-                                    * math.prod(
-                                        list(self.all_possible_count.values())[n + 2 :]
-                                    )
-                                    for n in range(number_all)
-                                    if solution[n] is not None
-                                ]
-                            )
-                            / math.prod(list(self.all_possible_count.values())),
-                        )
                         self.max_position = position
                     if position == number_all - 1:
+                        print(c)
+
                         return solution
                     position += 1
                     solution[position] = 0
                 else:
-                    self.board.clear()
                     while (
                         solution[position]
                         == self.all_possible_count[self.all_pos[position]] - 1
                     ):
-                        solution[position] = None
+                        solution[position] = -1
                         position -= 1
-                    if position < 0 or (limited and position == pos):
+                    if position < 0:
                         break
                     solution[position] += 1
+                    self.board.clear()
             return None
 
         self.start = time.perf_counter()
@@ -788,8 +695,24 @@ class CrossNumber:
         return solution
 
     def solve(self, threaded=False, solution=None):
-        if not threaded:
-            solution = self.backtrace(solution, limited=True)
+        if isinstance(self.board, RustedBoard):
+            solution = self.board.backtrace(
+                [],
+                self.all_pos,
+                self.pos_all_possible,
+                self.all_possible_count,
+            )
+            while not self.safe_up_to(solution, len(self.all_pos) - 1):
+                solution[-1] += 1
+                solution = self.board.backtrace(
+                    solution,
+                    self.all_pos,
+                    self.pos_all_possible,
+                    self.all_possible_count,
+                )
+            self.display(solution)
+        else:
+            solution = self.backtrace(solution)
             self.board.clear()
             for idx, val in enumerate(solution):
                 self.board.set_value(
@@ -798,23 +721,27 @@ class CrossNumber:
                 )
             self.display(solution)
 
-            raise IndexError
-        else:
-            pool = multiprocessing.Pool()
-
-            raise IndexError
-
     def display(self, solution=None):
         """
         Outputs a graphical view of the board to STDIO
         """
         if solution is None:
             solution = [0] * len(self.all_pos)
+
+        if isinstance(self.board, Board):
+            values = self.board.values
+        elif isinstance(self.board, RustedBoard):
+            values = [
+                self.board.values[x * self.dim[1] : (x + 1) * self.dim[1]]
+                for x in range(self.dim[0])
+            ]
+        else:
+            raise NotImplementedError("Missing class")
         for row in range(self.dim[0]):
             val = []
             for col in range(self.dim[1]):
-                if self.board.values[row][col] is not None:
-                    val.append(" " + str(self.board.values[row][col]) + " ")
+                if values[row][col] is not None and values[row][col] != 255:
+                    val.append(" " + str(values[row][col]) + " ")
                 elif self.board_layout[row][col] != -1:
                     val.append("   ")
                 else:
@@ -822,16 +749,11 @@ class CrossNumber:
             print("\u2503".join(val))
             if row != self.dim[0] - 1:
                 print("\u254B".join(["\u2501\u2501\u2501" for _ in range(self.dim[1])]))
-        n0 = sum([x.count(0) for x in self.board.values])
-        n1 = sum([x.count(1) for x in self.board.values])
-        n2 = sum([x.count(2) for x in self.board.values])
-        n3 = sum([x.count(3) for x in self.board.values])
-        n4 = sum([x.count(4) for x in self.board.values])
-        n5 = sum([x.count(5) for x in self.board.values])
-        n6 = sum([x.count(6) for x in self.board.values])
-        n7 = sum([x.count(7) for x in self.board.values])
-        n8 = sum([x.count(8) for x in self.board.values])
-        n9 = sum([x.count(9) for x in self.board.values])
+
+        if isinstance(self.board, RustedBoard):
+            c = self.board.get_digit_count()
+        else:
+            c = [sum([x.count(n) for x in self.board.values]) for n in range(10)]
         print("init     ", round(math.log10(self.count["init"]), 2))
         print("reduced  ", round(math.log10(self.count["reduced"]), 2))
         print(
@@ -862,8 +784,9 @@ class CrossNumber:
             * 100,
             "percent",
         )
-        print(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9)
         print(solution)
+
+        print(" ".join([str(d) for d in c]))
 
 
 if __name__ == "__main__":

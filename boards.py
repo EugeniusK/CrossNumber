@@ -1,6 +1,6 @@
-from solver import CrossNumber
+from solver import CrossNumberSolver
 
-board_ryder = CrossNumber(
+board_ryder = CrossNumberSolver(
     {
         "name": "ryder",
         "dimensions": {"height": 10, "width": 10},
@@ -63,7 +63,7 @@ board_ryder = CrossNumber(
         },
     }
 )
-board_yuichiro = CrossNumber(
+board_yuichiro = CrossNumberSolver(
     {
         "name": "yuichiro",
         "dimensions": {"height": 12, "width": 12},
@@ -142,7 +142,7 @@ board_yuichiro = CrossNumber(
     },
 )
 
-# board_liersch_patki = CrossNumber(
+# board_liersch_patki = CrossNumberSolver(
 #     {
 #         "name": "liersch_patki",
 #         "dimensions": {"height": 10, "width": 10},
