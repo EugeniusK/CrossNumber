@@ -94,105 +94,34 @@ class Board:
 
 class CrossNumberSolver:
     def __init__(self, input_board: dict) -> None:
-        self.start = time.perf_counter()
+        if self.validate_inputs(input_board):
+            print(f"CrossNumber {input_board['name']} validated")
+
         self.name = input_board["name"]
-        """Preprocessing of crossnumber
-        
-        Note:
-            input_board has various fields and must follow a specific structure
-
-            "name" (str): name of the crossnumber as referred to on PDF
-            "dimensions" (dict): dimensions using "height" (int) and "width" (int) attributes
-            "across clues" (dict): clues are identified by number (as on PDF) + "a"
-            "down clues" (dict): clues are identified by number (as on PDF) + "d"
-
-            individual clues are initially represented by
-
-            "type" (str): broad classification of the clue - integer if unsure
-            "eval" (str, optional): any condition given as a valid Python expression
-            "multiple" (str, optional): a condition where the number must be a multiple of a constant or other numbers
-                given as a valid Python expression
-            "sum" (str, optional): a condition where the sum of the digits of the number must be a multiple of a constant or other numbers
-                given as a valid Python expression
-            "hint" (str, optional): hint for the given clue as on PDF
-
-            then additional information added as needed by the program
-
-            "pos" (tuple of (int, int, bool)): position of the clue 
-            
-        Args:
-            input_board (dict): information about the crossnumber
-        """
-
-        if input_board.get("board layout") is None:
-            raise AttributeError("Missing board layout data")
-        else:
-            if not isinstance(input_board.get("board layout"), list):
-                raise AttributeError("Board layout data should be a 2D array")
-            elif isinstance(input_board.get("board layout"), list) and not isinstance(
-                input_board.get("board layout")[0], list
-            ):
-                raise AttributeError("Board layout data should be a 2D array")
-
-        if input_board.get("dimensions") is None:
-            raise AttributeError("Missing board dimensions")
-        else:
-            if not isinstance(input_board.get("dimensions"), dict):
-                raise AttributeError("Board dimensions should be as a dict")
-            else:
-                if (
-                    "height" not in input_board.get("dimensions").keys()
-                    or "width" not in input_board.get("dimensions").keys()
-                ):
-                    raise AttributeError(
-                        f"Board dimensions are missing {' and '.join([attr for attr in ['height', 'width'] if attr not in input_board.get('dimensions').keys()])}"
-                    )
-
-        if len(input_board.get("board layout")) != input_board.get("dimensions").get(
-            "height"
-        ):
-            raise ValueError("Board height is incorrect")
-        elif False in [
-            True if len(row) == input_board.get("dimensions").get("width") else False
-            for row in input_board.get("board layout")
-        ]:
-            raise ValueError("Board width is incorrect")
         self.dim = (
             input_board["dimensions"]["height"],
             input_board["dimensions"]["width"],
         )
         self.board_layout = input_board["board layout"]
+        self.values = [[None for _ in range(self.dim[1])] for _ in range(self.dim[0])]
+        self.start = 0
         # provides a mapping from verbose position to exact position
         # example: 15a -> (0,0,True)
         # (row, col, horizontal?): (int, int, bool)
         self.verbose_pos_pos_mapping = dict()
         pos_verbose_pos_mapping = dict()
-        for row in range(self.dim[0]):
-            for col in range(self.dim[1]):
-                if input_board["board layout"][row][col] > 0:
-                    if (
-                        str(input_board["board layout"][row][col]) + "a"
-                        in input_board["across clues"].keys()
-                    ):
-                        self.verbose_pos_pos_mapping[
-                            str(input_board["board layout"][row][col]) + "a"
-                        ] = (row, col, True)
-                        pos_verbose_pos_mapping[(row, col, True)] = (
-                            str(input_board["board layout"][row][col]) + "a"
-                        )
-                    if (
-                        str(input_board["board layout"][row][col]) + "d"
-                        in input_board["down clues"].keys()
-                    ):
-                        self.verbose_pos_pos_mapping[
-                            str(input_board["board layout"][row][col]) + "d"
-                        ] = (row, col, False)
-                        pos_verbose_pos_mapping[(row, col, False)] = (
-                            str(input_board["board layout"][row][col]) + "d"
-                        )
 
-        # numbers in the cross number
-        self.values = [[None for _ in range(self.dim[1])] for _ in range(self.dim[0])]
+        across_clues_keys = input_board["across clues"].keys()
+        down_clues_keys = input_board["down clues"].keys()
+        for row, col in itertools.product(range(self.dim[1]), range(self.dim[1])):
+            val = input_board["board layout"][row][col]
+            if val > 0:
+                if str(val) + "a" in across_clues_keys:
+                    self.verbose_pos_pos_mapping[str(val) + "a"] = (row, col, True)
+                    pos_verbose_pos_mapping[(row, col, True)] = str(val) + "a"
+                if str(val) + "d" in down_clues_keys:
+                    self.verbose_pos_pos_mapping[str(val) + "d"] = (row, col, False)
+                    pos_verbose_pos_mapping[(row, col, False)] = str(val) + "d"
 
         # determine the length of nubmers in the crossnumber
         # and the type of nubmers it accepts
@@ -264,9 +193,9 @@ class CrossNumberSolver:
                         numbers_dict_calculated[clue] = NUMBERS_DICT[clue](10**length)
                     json.dump(numbers_dict_calculated, f)
 
-        self.count = dict()
-        self.count["init"] = math.prod([len(x) for x in self.pos_all_possible.values()])
-        print("init     ", round(math.log10(self.count["init"]), 2))
+        self.count = {
+            "init": math.prod([len(x) for x in self.pos_all_possible.values()])
+        }
 
         # tier 1 - there are fixed possibilities
         # tier 2 - there are varying possibilities based on other factors beyond the number
@@ -407,8 +336,7 @@ class CrossNumberSolver:
                             if dsum(x) == eval(clue["dsum"])
                         ]
                 find_identifiers.clear()
-        # raise IndexError
-        self.unfiltered_expr = []
+        unfiltered_expr = []
         for pos, expr in self.t2_description.items():
             find_operator_operand.visit(ast.parse(expr))
             find_sqrt_argument.visit(ast.parse(expr))
@@ -422,17 +350,11 @@ class CrossNumberSolver:
             # only one operand in expression
             if operands:
                 if isinstance(operands[0], ast.Mult):
-                    self.unfiltered_expr.append(
-                        (operands[0], pos, operands[1], operands[2])
-                    )
+                    unfiltered_expr.append((operands[0], pos, operands[1], operands[2]))
                 elif isinstance(operands[0], (ast.Div, ast.FloorDiv)):
-                    self.unfiltered_expr.append(
-                        (operands[0], pos, operands[1], operands[2])
-                    )
+                    unfiltered_expr.append((operands[0], pos, operands[1], operands[2]))
                 elif isinstance(operands[0], ast.Pow):
-                    self.unfiltered_expr.append(
-                        (operands[0], pos, operands[1], operands[2])
-                    )
+                    unfiltered_expr.append((operands[0], pos, operands[1], operands[2]))
             if sqrt_arguments:
                 for argument in sqrt_arguments:
                     find_identifiers.visit(ast.parse(argument))
@@ -451,7 +373,7 @@ class CrossNumberSolver:
                         ]
                     find_identifiers.clear()
 
-        for expr in self.unfiltered_expr:
+        for expr in unfiltered_expr:
             if (
                 isinstance(expr[2], ast.Name)
                 and isinstance(expr[3], ast.Constant)
@@ -503,10 +425,76 @@ class CrossNumberSolver:
         self.all_possible_count = {
             x: len(self.pos_all_possible[x]) for x in self.all_pos
         }
+
         self.overlap_digits_optimise(verbose_pos_clue_lengths)
 
         self.board = RustedBoard(*self.dim)
         # self.board = Board(self.dim)
+
+    def validate_inputs(self, input_board: dict) -> bool:
+        """Preprocessing of crossnumber
+
+        Note:
+            input_board has various fields and must follow a specific structure
+
+            "name" (str): name of the crossnumber as referred to on PDF
+            "dimensions" (dict): dimensions using "height" (int) and "width" (int) attributes
+            "across clues" (dict): clues are identified by number (as on PDF) + "a"
+            "down clues" (dict): clues are identified by number (as on PDF) + "d"
+
+            individual clues are initially represented by
+
+            "type" (str): broad classification of the clue - integer if unsure
+            "eval" (str, optional): any condition given as a valid Python expression
+            "multiple" (str, optional): a condition where the number must be a multiple of a constant or other numbers
+                given as a valid Python expression
+            "sum" (str, optional): a condition where the sum of the digits of the number must be a multiple of a constant or other numbers
+                given as a valid Python expression
+            "hint" (str, optional): hint for the given clue as on PDF
+
+            then additional information added as needed by the program
+
+            "pos" (tuple of (int, int, bool)): position of the clue
+
+        Args:
+            input_board (dict): information about the crossnumber
+        """
+
+        if input_board.get("board layout") is None:
+            raise AttributeError("Missing board layout data")
+        else:
+            if not isinstance(input_board.get("board layout"), list):
+                raise AttributeError("Board layout data should be a 2D array")
+            elif isinstance(input_board.get("board layout"), list) and not isinstance(
+                input_board.get("board layout")[0], list
+            ):
+                raise AttributeError("Board layout data should be a 2D array")
+
+        if input_board.get("dimensions") is None:
+            raise AttributeError("Missing board dimensions")
+        else:
+            if not isinstance(input_board.get("dimensions"), dict):
+                raise AttributeError("Board dimensions should be as a dict")
+            else:
+                if (
+                    "height" not in input_board.get("dimensions").keys()
+                    or "width" not in input_board.get("dimensions").keys()
+                ):
+                    raise AttributeError(
+                        f"Board dimensions are missing {' and '.join([attr for attr in ['height', 'width'] if attr not in input_board.get('dimensions').keys()])}"
+                    )
+
+        if len(input_board.get("board layout")) != input_board.get("dimensions").get(
+            "height"
+        ):
+            raise ValueError("Board height is incorrect")
+        elif False in [
+            True if len(row) == input_board.get("dimensions").get("width") else False
+            for row in input_board.get("board layout")
+        ]:
+            raise ValueError("Board width is incorrect")
+
+        return True
 
     def overlap_digits_optimise(self, verbose_pos_clue_lengths):
         all_possible_digits = [
@@ -524,12 +512,11 @@ class CrossNumberSolver:
                 else:
                     all_possible_digits[pos[0] + l][pos[1]].append(possible_digits)
 
-        for row in range(self.dim[0]):
-            for col in range(self.dim[1]):
-                if len(all_possible_digits[row][col]) != 0:
-                    all_possible_digits[row][col] = list(
-                        set.intersection(*all_possible_digits[row][col])
-                    )
+        for row, col in itertools.product(range(self.dim[0]), range(self.dim[1])):
+            if len(all_possible_digits[row][col]) != 0:
+                all_possible_digits[row][col] = list(
+                    set.intersection(*all_possible_digits[row][col])
+                )
 
         for verbose_pos, length in verbose_pos_clue_lengths.items():
             pos = self.verbose_pos_pos_mapping[verbose_pos]
@@ -659,20 +646,15 @@ class CrossNumberSolver:
             solution = current_solution
             try:
                 pos = solution.index(-1) - 1
-            except:
+            except ValueError:
                 pos = len(solution) - 1
 
         def backtrace_from(position):
-            c = 0
-
             while True:
-                c += 1
                 if self.safe_up_to(solution, position):
-                    if position > self.max_position:
-                        self.max_position = position
+                    if position > max_position:
+                        max_position = position
                     if position == number_all - 1:
-                        print(c)
-
                         return solution
                     position += 1
                     solution[position] = 0
@@ -689,12 +671,12 @@ class CrossNumberSolver:
                     self.board.clear()
             return None
 
-        self.start = time.perf_counter()
         solution = backtrace_from(pos)
         self.board.clear()
         return solution
 
     def solve(self, threaded=False, solution=None):
+        self.start = time.perf_counter()
         if isinstance(self.board, RustedBoard):
             solution = self.board.backtrace(
                 [],
@@ -754,6 +736,7 @@ class CrossNumberSolver:
             c = self.board.get_digit_count()
         else:
             c = [sum([x.count(n) for x in self.board.values]) for n in range(10)]
+
         print("init     ", round(math.log10(self.count["init"]), 2))
         print("reduced  ", round(math.log10(self.count["reduced"]), 2))
         print(
