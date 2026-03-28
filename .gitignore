@@ -3,3 +3,6 @@
 /numbers.json
 /test.txt
 /tmp.py
+/.env
+/target
+.DS_Store
